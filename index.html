@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trainsitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Falling</title>
+    <!--<link href="css/class.css" rel="stylesheet" />-->
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+    <meta charset="utf-8" />
+    <style type="text/css">
+        body {
+            background-repeat: no-repeat;
+            margin: 20px auto 80px auto;
+            width: 320px;
+            color: #fff;
+        }
+        
+        .divControls {
+            float: left;
+        }
+        
+        .divJump {
+            float: right;
+        }
+        
+        .bottom {
+            float: right;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body onload="fg.Game.start();">
+    <div class="header"></div>
+    <div class="mainContent">
+        <div class="content">
+            <canvas id="main" width="320" height="240" class="mc"></canvas>
+            <div class="mobileInput">
+                <div class="divControls">
+                    <img id="btnMoveLeft" />
+                    <img id="btnMoveRight" />
+                </div>
+                <div class="divJump">
+                    <img id="btnJump" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--
+    <div class="debug" style="display:none;">
+        <label for="txtTop" title="Top">Top</label>
+        <input type="text" id="txtTop" style="width:60px;" />
+        <input type="text" id="spd1" style="width:60px;" />
+        <input type="text" id="total" style="width:20px;" />
+        <input type="text" id="direct" style="width:20px;" />
+        <input type="text" id="keyCode" style="width:20px;" />
+        <input type="text" id="tg" style="width:20px;" />
+        <input type="text" id="g" style="width:60px;" />
+        <input type="text" id="md" style="width:60px;" />
+        <input type="text" id="ri" style="width:60px;" />
+        <input type="text" id="ci" style="width:60px;" />
+        <input type="text" id="ActorX" style="width:60px;" />
+        <input type="text" id="ActorY" style="width:60px;" />
+        <input type="text" id="posX" style="width:60px;" />
+        <input type="text" id="posY" style="width:60px;" />
+        <input type="text" id="fps" style="width:60px;" />
+        <input type="text" id="jmp" style="width:20px;" />
+        <input type="button" id="showIDs" data-name="add" onclick="showTilesID = !showTilesID;" />
+        <input type="button" id="warp" value="warp" onclick="Warp();" />
+        <input type="button" id="bg" value="bg" onclick="disableBG = !disableBG;" />
+        <input type="button" id="dr" value="dr" onclick="disableDraw = !disableDraw;" />
+        <input type="text" id="warpx" style="width:22px;" />
+        <input type="text" id="warpy" style="width:22px;" />
+        <input type="text" id="dt" style="width:22px;" />
+        <select id="dd" onchange="drawDepth = parseInt(this.options[this.selectedIndex].value);"></select>
+        <!--<script src="js/main.1.0.js"></script>-->
+    <script src="js/falling.js"></script>
+    </div>
+    <div class="bottom">
+        <a href="mailto:francisco.marao@hotmail.com">contact</a>
+        <img id="imgTest" style="border:1px solid black;display:none" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAYAAADnRuK4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAUHSURBVHhe7Z2xrRNNFEYNNAABHVAIEg2Q0AcFEFABfUBCikQAHdACCIkQiEhh7uJ9Go+/3Z2ZnbF3fc+RDob37PHaPv+9/AF6Dw6Hw/vg22AvPgW/Bb8Of9ofX4KPgz+CP+0LcMrfoEXUCzvftJCe2hd2xnj9psX0KvgkCEfiD7gH8Qdgvgu+CO6F9PpH7f16HdzjfxRNSd+U1sTnx+4lJHXtqa5jUm9GS9LzU7cekrrmOd3FNPUmtEKdr9xqSOpac3URk3rhZquI1Nlzbi0kdY013mxM6sWOtohInZvjVkJS17bWm4pJvcDYtRGpM0u8dkjqmlq6+5jUi0pdE5E6r8ZrhaSupZe7jEm9EGVtROqsNV46JHUNl3A3MamLn7ImInVOCy8VknruS7vpmNQFz1kakTqjpb1DUs95TTcXk7rIJUsiUo/vYa+Q1HNtxU3EpC4sx9yI1GN72jok9Rxb9GoxqYvJNSci9bhL2CokdfbWvWhM6gJKXIpIPeaSrg1Jnbknu8eknrTUuYjU/a9hbUjqrL3aJSb1RDVORaTue01LQ1Jn3ILNYlKH16oiUvfbgrkhqcfemqtiUgeuMY1I3WdLLoWkHnPLFsekDllrHJH6/hadCknd14tZMakHtvBD0FDf27L2psVvmLqPRyf/QYG6cystIvX1PTiGpL7n3ZOYXtovALX8Ot4CVGEjiSkE1VhA3///FqCc8S9Gb4Y/ARQyBsQUgirGgJhCUEUcEFMIiokDMplCUEQaEFMIikgDMplCkI0KiCkE2aiATKYQZKHiMZlCkIWKZ5QpBIuocEaZQrCICieWKQSzqGhimUIwi4omlSkEk6hgUplCMIkKRskUAomKRckUAomKZUqmEJyhQpmSKQRnqFDmZArBCSqSOZlCcIKKZEmmENyhAl"
+        />
+    </div>
+</body>
+
+</html>
