@@ -399,6 +399,7 @@ fg.Active =
             }
         },
         resolveNonOneWayYCollision: function (obj) {
+            if (Math.abs(this.speedY) <= fg.Game.gravity) return;
             if (obj.interactive) obj.interact(this);
             if (this.y <= obj.y)
                 this.y = obj.y - this.height;
@@ -433,7 +434,7 @@ fg.Active =
             this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
             let intersection = this.getIntersection(obj);
             if (intersection.height <= intersection.width) {
-                if (!obj.oneWay && !this.grounded) {
+                if (!obj.oneWay) {
                     this.resolveNonOneWayYCollision(obj);
                 } else {
                     if (obj.interactive) obj.interact(this);
@@ -990,7 +991,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 99, fg.System.defaultSide * 5, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 41, fg.System.defaultSide * 6, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
