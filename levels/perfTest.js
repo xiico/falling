@@ -1,4 +1,4 @@
-var perfTest =
+var perfTest = {tiles:
 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"+
 "X                      X╝      XX                                X\n"+
 "X   CX4   XXX                  ╚X                       ╔X       X\n"+
@@ -9,10 +9,10 @@ var perfTest =
 "3XXX    CC        XXXXXXXXXX╗2                             X     X\n"+
 " XXXX   CC        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  X\n"+
 "      XXCC                                                       X\n"+
-"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
 
-var backGround =
+backGround:
 "X X \n" +
 " X X\n" +
 "X X \n" +
-" X X";
+" X X"}

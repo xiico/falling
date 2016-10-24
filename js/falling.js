@@ -104,8 +104,10 @@ fg.protoLevel = {
     levelSwiches: [],
     movingPlatforms: [],
     loadSettings: function () {
-        this.levelSwiches = window[this.name].levelSwiches;
-        this.movingPlatforms = window[this.name].movingPlatforms;
+        if (window[this.name].levelSwiches)
+            this.levelSwiches = window[this.name].levelSwiches;
+        if (window[this.name].movingPlatforms)
+            this.movingPlatforms = window[this.name].movingPlatforms;
     },
     createEntities: function () {
         let rows = window[this.name].tiles.split('\n');
@@ -973,7 +975,7 @@ fg.Game =
         },
         start: function () {
             fg.System.init();
-            this.currentLevel = this.loadLevel("levelOne");
+            this.currentLevel = this.loadLevel("perfTest");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
             fg.Input.bind(fg.Input.KEY.LEFT_ARROW, "left");
