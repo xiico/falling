@@ -244,7 +244,7 @@ fg.protoEntity = {
         this.segments = [];
         return this;
     },
-    draw: function () {
+    draw: function (foreGround) {
         if (!fg.Render.cached[this.type]) {
             let c = fg.Render.preRenderCanvas();
             let ctx = c.getContext("2d");
@@ -253,6 +253,7 @@ fg.protoEntity = {
                 fg.Render.draw(fg.Render.cache(this.type, c), this.x, this.y, this.cacheX, this.cacheY, this.width, this.height);
         }
         else {
+            if (!foreGround && !this.backGround || foreGround && !this.foreGround) return;
             fg.Render.draw(fg.Render.cached[this.type], this.x, this.y, this.cacheX, this.cacheY, this.width, this.height);
         }
     },
@@ -281,6 +282,7 @@ fg.Active =
         entitiesToResolveY: null,
         nextPosition: {},
         addedSpeedX: 0,
+        backGround: true,
         update: function () {
             this.addGravity();
             this.entitiesToTest = fg.Game.searchArea(this.x, this.y, this.searchDepth, this.searchDepth);
@@ -431,6 +433,7 @@ fg.Active =
             if (this.speedY >= 0) {
                 if (!fg.Input.actions["jump"])
                     this.canJump = true;
+                if (obj.interactive) obj.interact(this);
                 this.grounded = true;
             }
             this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
@@ -522,6 +525,16 @@ fg.Platform = {
     oneWay: true
 }
 
+fg.Tunnel = {
+    backGround: false,
+    foreGround: true
+}
+
+fg.Bouncer = {
+    color: "red",
+    bounceness: 1.4
+}
+
 fg.Wall = function (id, type, x, y, cx, cy, index) {
     let wall = Object.create(fg.protoEntity);
     wall.init(id, type, x, y, cx, cy, index);
@@ -531,10 +544,10 @@ fg.Wall = function (id, type, x, y, cx, cy, index) {
     if (wall.type == TYPE.PLATFORM)
         wall = Object.assign(wall, fg.Interactive, fg.Platform, wall.moving ? fg.MovingPlatform : null);
     wall.slope = false;
-    wall.foreGround = type == TYPE.TUNNEL;
+    wall.backGround = true;
+    wall.foreGround = false;
     if (type == TYPE.BOUNCER) {
-        wall.color = "red";
-        wall.bounceness = 1.4;
+        wall = Object.assign(wall, fg.Bouncer);
     }
     wall.drawTile = function (c, ctx) {
         c.width = this.width * 4;
@@ -563,6 +576,10 @@ fg.Wall = function (id, type, x, y, cx, cy, index) {
         }
         return c;
     };
+    if (type == TYPE.SWITCH)
+        wall = Object.assign(wall, fg.Interactive, fg.Switch);
+    if (type == TYPE.TUNNEL)
+        wall = Object.assign(wall, fg.Tunnel);
     return wall;
 }
 
@@ -576,18 +593,79 @@ fg.Interactive = {
     },
     update: function () {
         this.interacting = false;
+        this.interactor = undefined;
     }
 }
 
 fg.Switch = {
     on: false,
+    defaulState: false,
+    foreGround: true,
     target: undefined,
-    init: function () { },
-    update: function () { },
+    timed: true,
+    timer: undefined,
+    defaulTimer: 120,
+    canChangeState: true,
+    init: function () {
+        this.timer = this.defaulTimer;
+    },
+    update: function () {
+        if (this.timer === undefined) this.init();
+        if (this.interacting) {
+            if (this.interactor.x >= this.x && this.interactor.x + this.interactor.width <= this.x + this.width) {
+                if (this.canChangeState) {
+                    this.on = !this.on;
+                    this.canChangeState = false;
+                }
+                this.timer = this.defaulTimer;
+            }
+        } else this.canChangeState = true;
+
+        if (this.timed && this.timer > 0) {
+            this.timer--;
+            if (this.timer <= 0) this.on = this.defaulState;
+        }
+        fg.Interactive.update.call(this);
+    },
+    interact: function (obj) {
+        fg.Interactive.interact.call(this, obj);
+    },
     drawTile: function (c, ctx) {
+        c.width = this.width * 3;
+        c.height = this.height
         ctx.fillStyle = this.color;
         ctx.fillRect(0, 5, this.width, this.height - 5);
+        ctx.fillStyle = "grey";
+        ctx.fillRect(1, 6, this.width - 2, this.height - 7);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(2, 7, this.width - 4, this.height - 9);
+        //Green
+        ctx.fillStyle = "rgb(0,160,0)";
+        ctx.fillRect(this.width, 0, this.width, 5);
+        ctx.fillStyle = "rgb(90,255,90)";
+        ctx.fillRect(this.width + 1, 0, this.width - 1, 4);
+        ctx.fillStyle = "rgb(0,255,0)";
+        ctx.fillRect(this.width + 1, 1, this.width - 2, 3);
+        //Red
+        ctx.fillStyle = "rgb(160,0,0)";
+        ctx.fillRect((this.width * 2), 0, this.width, 5);
+        ctx.fillStyle = "rgb(255,90,90)";
+        ctx.fillRect((this.width * 2) + 1, 0, this.width - 1, 4);
+        ctx.fillStyle = "rgb(255,0,0)";
+        ctx.fillRect((this.width * 2) + 1, 1, this.width - 2, 3);
+        //ctx.fillRect(this.width * 2, 0, this.width, 5);
         return c;
+    },
+    draw: function (foreGround) {
+        if (foreGround) {
+            if (this.on)
+                this.cacheX = this.width;
+            else
+                this.cacheX = this.width * 2;
+        } else
+            this.cacheX = 0
+
+        fg.protoEntity.draw.call(this);
     }
 }
 
@@ -749,6 +827,7 @@ fg.Slope = function (id, type, x, y, cx, cy, index) {
     let slope = Object.create(fg.protoEntity);
     slope.init(id, type, x, y, cx, cy, index);
     slope.slope = true;
+    slope.backGround = true;
     slope.drawTile = function (c, ctx) {
         c.width = this.width * 15;
         c.height = this.height;
@@ -1031,7 +1110,7 @@ fg.Game =
                 for (let index = 0, entity; entity = this.actors[index]; index++)
                     this.updateEntity(entity);
                 for (let index = 0, entity; entity = this.foreGroundEntities[index]; index++)
-                    entity.draw();
+                    entity.draw(true);
                 fg.Timer.update();
                 fg.Camera.update();
             } else {
@@ -1041,9 +1120,8 @@ fg.Game =
         updateEntity: function (obj) {
             obj.update();
             if (obj.x > fg.Camera.right || obj.x + obj.width < fg.Camera.left || obj.y > fg.Camera.bottom || obj.y + obj.height < fg.Camera.top) return;
-            if (!obj.foreGround)
-                obj.draw();
-            else
+            obj.draw();
+            if (obj.foreGround)
                 fg.Game.foreGroundEntities.push(obj);
         },
         searchArea: function (startX, startY, depthX, depthY, loopCallBack, endLoopCallBack, caller) {
