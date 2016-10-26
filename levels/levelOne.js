@@ -7,7 +7,7 @@
 "8      ╔XXXXXXXXXSXXXXXXXXXXXXXXXXXXXXXXXX            pp                                  XXX         XXXX    XXDDDDDDDX X       pp             X                X         Xp   p   pX             p  p  ppp       p   p   p  16        X                                                      X16          X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
 "      ╔XXXXXX                                       pp        pppppppppp                  XXX         XXXXSXXXXXXDDDDDDX X    pp               GX          TTT╝ ╔X         X  p   p  X          p              G              X         XG       S    S    S    S    S    S    S    S    S    XXX           X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
 "     ╔X    XXSXXXXXXXXXX       XXXXXXXXXXh        pp        pp          pp                XXX         XXXXX   TTXXXXXXXX Xppp                 pXX          TT╝ ╔TX         Xp   p   pX             p           M              X         XX       X    X    X    X    X    X    X    X    X     XX           X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
-"    ╔X  XX B   cC       X     X          X     ppp        pp          pp         TTTTTTTTXXXX         TTTTT   XTX        X    pppppppppp       3X          T╝ ╔TTX         X  p   p  X                p        MG             X         XXG      X    X    X    X    X    X    X    X    X     XX           X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
+"    ╔X  XX B   c        X     X          X     ppp        pp          pp         TTTTTTTTXXXX         TTTTT   XTX        X    pppppppppp       3X          T╝ ╔TTX         X  p   p  X                p        MG             X         XXG      X    X    X    X    X    X    X    X    X     XX           X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
 "   ╔X  XXX XXXXXXXXX   XXX      XXXXX    X        pppppppp          pp           XXXXXXXTTXXX         XXXXXXStXTX XXXXXXXX               pp     X          ╝ ╔TTTX         Xp   p   pX                   p     MM             X         XXX                                                    XX           X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
 "  ╔X  XXXX XXXXXXXXXX XXXXX XXXX      X  XB                       pp             X1XXXXXXTTXX         XTTTTTTTTTX                      p        X                             p   p  X                      p  MMG            X         XXXG                                                   XX           X                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   X\n" +
 "  X  XXXXX XXXXX   XXSXXX                XXXXXXXXXXX9        X9        X9        X8       TTXStXXXXSXXXTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXMMMMMMMMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  X\n" +
@@ -242,48 +242,48 @@
 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
 
  levelSwiches :
-    [{ id: "11-21", settings: { targetID: "10-28" } },
-     { id: "7-13", settings: { targetID: "9-19", defaultState : true, pressed : true } },
-     { id: "11-99", settings: { targetID : "11-101", growthMultiplier : 8, timed : true, totalTime : 500 } },
-     { id: "6-106", settings: { targetID : "5-110", growthMultiplier : 3, growthDirection : "L", timed : true, totalTime : 150 } },
-     { id: "9-108", settings: { targetID : "5-110", timed : true } },
-     { id: "11-93", settings: { targetID : "3-99",growthMultiplier : 3,growthDirection : "R",timed : true,totalTime : 300 } },
-     { id: "40-28", settings: { targetID : "40-29",growthMultiplier : 8,growthDirection : "R",timed : true,totalTime : 120,growthSpeed : 2 } },
-     { id: "44-41", settings: { targetID : "43-49",growthMultiplier : 6,growthDirection : "L",timed : true,totalTime : 60,growthSpeed : 2 } },
-     { id: "52-14", settings: { targetID : "49-19",growthMultiplier : 3,timed : true,totalTime : 60 } },
-     { id: "15-72", settings: { targetID : "15-73",defaultState : true,pressed : true } },
-     { id: "4-237", settings: { targetID : "6-241",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//1
-     { id: "6-241", settings: { targetID : "6-246",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//2
-     { id: "6-246", settings: { targetID : "6-251",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//3
-     { id: "6-251", settings: { targetID : "6-256",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//4
-     { id: "6-256", settings: { targetID : "6-261",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//5
-     { id: "6-261", settings: { targetID : "6-266",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//6
-     { id: "6-266", settings: { targetID : "6-271",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//7
-     { id: "6-271", settings: { targetID : "6-276",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//8
-     { id: "6-276", settings: { targetID : "6-281",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//9
-     { id: "6-281", settings: { targetID : "6-286",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//10
-     { id: "29-237", settings: { targetID : "31-241",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//1
-     { id: "31-241", settings: { targetID : "31-246",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//2
-     { id: "31-246", settings: { targetID : "31-251",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//3
-     { id: "31-251", settings: { targetID : "31-256",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//4
-     { id: "31-256", settings: { targetID : "31-261",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//5
-     { id: "31-261", settings: { targetID : "31-266",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//6
-     { id: "31-266", settings: { targetID : "31-271",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//7
-     { id: "31-271", settings: { targetID : "31-276",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//8
-     { id: "31-276", settings: { targetID : "31-281",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//9
-     { id: "31-281", settings: { targetID : "31-286",growthMultiplier : 3,timed : true,totalTime : 60,growthSpeed : 2 } },//10
-     { id: "61-231", settings: { targetID : "56-227",timed : true,totalTime : 1000,growthSpeed : 2 } },
-     { id: "61-233", settings: { targetID : "56-233",timed : true,totalTime : 1000,growthSpeed : 2 } },
-     { id: "61-235", settings: { targetID : "56-238",timed : true,totalTime : 1000,growthSpeed : 2 } },
-     { id: "61-237", settings: { targetID : "56-241",timed : true,totalTime : 1000,growthSpeed : 2 } },
-     { id: "71-254", settings: { targetID : "71-256",growthMultiplier : 6,timed : true,totalTime : 250 } },
-     { id: "71-257", settings: { targetID : "66-255",growthMultiplier : 6,timed : true,totalTime : 250 } },
-     { id: "60-258", settings: { targetID : "60-257",growthMultiplier : 4,timed : true,totalTime : 500,growthSpeed : .5 } },
-     { id: "60-260", settings: { targetID : "60-259",growthMultiplier : 6,timed : true,totalTime : 500,growthSpeed : .5 } },
-     { id: "60-262", settings: { targetID : "60-261",growthMultiplier : 4,timed : true,totalTime : 500,growthSpeed : .5 } },
-     { id: "60-264", settings: { targetID : "60-263",growthMultiplier : 5,timed : true,totalTime : 500,growthSpeed : .5 } },
-     { id: "55-266", settings: { targetID : "55-264",growthMultiplier : 3,timed : true,totalTime : 500,growthSpeed : 1 } }],
-movingPlatforms:[{id:"3-63", settings:{moving:true,movingOnX:true}}],
+    [{ id: "11-21", features: { moveTarget: true }, settings: { targetId: "10-28", pressure:true } },
+    { id: "7-13", features: { moveTarget: true }, settings: { targetId: "9-19", defaultState: true, on: true } },
+    { id: "11-99", features: { moveTarget: true }, settings: { targetId: "11-101", distance: 8, timed: true, timer: 500 } },
+    { id: "6-106", features: { moveTarget: true }, settings: { targetId: "5-110", distance: 3, direction: "L", timed: true, timer: 150 } },
+    { id: "9-108", features: { moveTarget: true }, settings: { targetId: "5-110", timed: true } },
+    { id: "11-93", features: { moveTarget: true }, settings: { targetId: "3-99", distance: 3, direction: "R", timed: true, timer: 300 } },
+    { id: "40-28", features: { moveTarget: true }, settings: { targetId: "40-29", distance: 8, direction: "R", timed: true, timer: 120, speed: 0.06 } },
+    { id: "44-41", features: { moveTarget: true }, settings: { targetId: "43-49", distance: 6, direction: "L", timed: true, timer: 60, speed: 0.06 } },
+    { id: "52-14", features: { moveTarget: true }, settings: { targetId: "49-19", distance: 3, timed: true, timer: 60 } },
+    { id: "15-72", features: { moveTarget: true }, settings: { targetId: "15-73", defaultState: true, on: true } },
+    { id: "4-237", features: { moveTarget: true }, settings: { targetId: "6-241", distance: 3, timed: true, timer: 60, speed: 0.12 } },//1
+    { id: "6-241", features: { moveTarget: true }, settings: { targetId: "6-246", distance: 3, timed: true, timer: 60, speed: 0.12 } },//2
+    { id: "6-246", features: { moveTarget: true }, settings: { targetId: "6-251", distance: 3, timed: true, timer: 60, speed: 0.12 } },//3
+    { id: "6-251", features: { moveTarget: true }, settings: { targetId: "6-256", distance: 3, timed: true, timer: 60, speed: 0.12 } },//4
+    { id: "6-256", features: { moveTarget: true }, settings: { targetId: "6-261", distance: 3, timed: true, timer: 60, speed: 0.12 } },//5
+    { id: "6-261", features: { moveTarget: true }, settings: { targetId: "6-266", distance: 3, timed: true, timer: 60, speed: 0.12 } },//6
+    { id: "6-266", features: { moveTarget: true }, settings: { targetId: "6-271", distance: 3, timed: true, timer: 60, speed: 0.12 } },//7
+    { id: "6-271", features: { moveTarget: true }, settings: { targetId: "6-276", distance: 3, timed: true, timer: 60, speed: 0.12 } },//8
+    { id: "6-276", features: { moveTarget: true }, settings: { targetId: "6-281", distance: 3, timed: true, timer: 60, speed: 0.12 } },//9
+    { id: "6-281", features: { moveTarget: true }, settings: { targetId: "6-286", distance: 3, timed: true, timer: 60, speed: 0.12 } },//10
+    { id: "29-237", features: { moveTarget: true }, settings: { targetId: "31-241", distance: 3, timed: true, timer: 60, speed: 0.12 } },//1
+    { id: "31-241", features: { moveTarget: true }, settings: { targetId: "31-246", distance: 3, timed: true, timer: 60, speed: 0.12 } },//2
+    { id: "31-246", features: { moveTarget: true }, settings: { targetId: "31-251", distance: 3, timed: true, timer: 60, speed: 0.12 } },//3
+    { id: "31-251", features: { moveTarget: true }, settings: { targetId: "31-256", distance: 3, timed: true, timer: 60, speed: 0.12 } },//4
+    { id: "31-256", features: { moveTarget: true }, settings: { targetId: "31-261", distance: 3, timed: true, timer: 60, speed: 0.12 } },//5
+    { id: "31-261", features: { moveTarget: true }, settings: { targetId: "31-266", distance: 3, timed: true, timer: 60, speed: 0.12 } },//6
+    { id: "31-266", features: { moveTarget: true }, settings: { targetId: "31-271", distance: 3, timed: true, timer: 60, speed: 0.12 } },//7
+    { id: "31-271", features: { moveTarget: true }, settings: { targetId: "31-276", distance: 3, timed: true, timer: 60, speed: 0.12 } },//8
+    { id: "31-276", features: { moveTarget: true }, settings: { targetId: "31-281", distance: 3, timed: true, timer: 60, speed: 0.12 } },//9
+    { id: "31-281", features: { moveTarget: true }, settings: { targetId: "31-286", distance: 3, timed: true, timer: 60, speed: 0.12 } },//10
+    { id: "61-231", features: { moveTarget: true }, settings: { targetId: "56-227", timed: true, timer: 1000, speed: 0.12 } },
+    { id: "61-233", features: { moveTarget: true }, settings: { targetId: "56-233", timed: true, timer: 1000, speed: 0.12 } },
+    { id: "61-235", features: { moveTarget: true }, settings: { targetId: "56-238", timed: true, timer: 1000, speed: 0.12 } },
+    { id: "61-237", features: { moveTarget: true }, settings: { targetId: "56-241", timed: true, timer: 1000, speed: 0.12 } },
+    { id: "71-254", features: { moveTarget: true }, settings: { targetId: "71-256", distance: 6, timed: true, timer: 250 } },
+    { id: "71-257", features: { moveTarget: true }, settings: { targetId: "66-255", distance: 6, timed: true, timer: 250 } },
+    { id: "60-258", features: { moveTarget: true }, settings: { targetId: "60-257", distance: 4, timed: true, timer: 500, speed: .03 } },
+    { id: "60-260", features: { moveTarget: true }, settings: { targetId: "60-259", distance: 6, timed: true, timer: 500, speed: .03 } },
+    { id: "60-262", features: { moveTarget: true }, settings: { targetId: "60-261", distance: 4, timed: true, timer: 500, speed: .03 } },
+    { id: "60-264", features: { moveTarget: true }, settings: { targetId: "60-263", distance: 5, timed: true, timer: 500, speed: .03 } },
+    { id: "55-266", features: { moveTarget: true }, settings: { targetId: "55-264", distance: 3, timed: true, timer: 500, speed: 0.06 } }],
+movingPlatforms:[{id:"3-63", features:{moving:true}, settings:{movingOnX:true}}],
 backGround :
     "X X \n" +
     " X X\n" +

@@ -139,15 +139,29 @@ fg.protoLevel = {
         let settings = undefined;
         switch (entity.type) {
             case TYPE.PLATFORM:
-                settings = this.movingPlatforms.find(function (e) { return e.id == entity.id });
+                settings = (this.movingPlatforms.find(function (e) { return e.id == entity.id }) || {}).settings;
                 break;
             case TYPE.SWITCH:
-                settings = this.levelSwiches.find(function (e) { return e.id == entity.id });
+                settings = (this.levelSwiches.find(function (e) { return e.id == entity.id }) || {}).settings;
                 break;
             default:
                 break;
         }
-        if (settings) Object.assign(entity, settings.settings);
+        if (settings) Object.assign(entity, settings);
+    },
+    applyFeaturesToEntity: function (entity) {
+        let features = undefined;
+        switch (entity.type) {
+            case TYPE.PLATFORM:
+                features = (this.movingPlatforms.find(function (e) { return e.id == entity.id }) || {}).features;
+                break;
+            case TYPE.SWITCH:
+                features = (this.levelSwiches.find(function (e) { return e.id == entity.id }) || {}).features;
+                break;
+            default:
+                break;
+        }
+        if (features) Object.assign(entity, features);
     },
     load: function () {
         fg.loadScript('levels/', this.name,
@@ -226,8 +240,6 @@ fg.protoLevel = {
 }
 
 fg.protoEntity = {
-    x: 0,
-    y: 0,
     index: 0,
     init: function (id, type, x, y, cx, cy, index) {
         this.type = type;
@@ -367,6 +379,8 @@ fg.Active =
                 if (obj.active)
                     obj.speedX -= this.speedX * Math.max(this.bounceness, (obj.bounceness || 0));
                 this.speedX = Math.abs(this.speedX) * Math.max(this.bounceness, (obj.bounceness || 0)) >= 0.001 ? this.speedX * Math.max(this.bounceness, (obj.bounceness || 0)) : 0;
+                if (obj.type == TYPE.BOUNCER && Math.abs(this.speedX) < 0.2)
+                    this.speedX = this.speedX > 0 ? 0.2 : -0.2;
             } else {
                 if (Math.round((this.y + intersection.height) * 100) / 100 >= Math.round((obj.y + obj.height) * 100) / 100)
                     this.y = obj.y + obj.height;
@@ -410,6 +424,7 @@ fg.Active =
             else
                 this.y = obj.y + obj.height;
             this.speedY = this.speedY * -1;
+            if (Math.abs(this.speedY) < 0.03) this.speedY = 0;
             if (obj.active)
                 obj.speedY -= this.speedY * Math.max(this.bounceness, (obj.bounceness || 0));
             this.speedY = this.speedY * Math.max(this.bounceness, (obj.bounceness || 0));
@@ -502,7 +517,7 @@ fg.Circle = function (id, type, x, y, cx, cy, index) {
     circle = Object.assign(circle, fg.Active);
     circle.init(id, type, x, y, cx, cy, index);
     circle.soilFriction = 0.999;
-    circle.speedX = -0.4;//1.4
+    circle.speedX = -0.05;//1.4
     circle.bounceness = 0.7;
     circle.width = fg.System.defaultSide / 2;
     circle.height = fg.System.defaultSide / 2;
@@ -538,7 +553,7 @@ fg.Bouncer = {
 fg.Wall = function (id, type, x, y, cx, cy, index) {
     let wall = Object.create(fg.protoEntity);
     wall.init(id, type, x, y, cx, cy, index);
-    fg.Game.currentLevel.applySettingsToEntity(wall);
+    fg.Game.currentLevel.applyFeaturesToEntity(wall);
     if (type == TYPE.GROWER)
         wall = Object.assign(wall, fg.Interactive, fg.Grower);
     if (wall.type == TYPE.PLATFORM)
@@ -577,9 +592,10 @@ fg.Wall = function (id, type, x, y, cx, cy, index) {
         return c;
     };
     if (type == TYPE.SWITCH)
-        wall = Object.assign(wall, fg.Interactive, fg.Switch);
+        wall = Object.assign(wall, fg.Interactive, fg.Switch, wall.moveTarget ? fg.MoveTarget : null);
     if (type == TYPE.TUNNEL)
         wall = Object.assign(wall, fg.Tunnel);
+    fg.Game.currentLevel.applySettingsToEntity(wall);
     return wall;
 }
 
@@ -597,27 +613,113 @@ fg.Interactive = {
     }
 }
 
+fg.MoveTarget = {
+    distance: 1,
+    direction: "U",
+    speed: 0.06,
+    moveUp: function () {
+        if (!this.target.defaultY) this.target.defaultY = this.target.y;
+        if (this.on) {
+            if (this.target.y > this.target.defaultY - (fg.System.defaultSide * this.distance))
+                this.target.y -= this.speed * fg.Timer.deltaTime;//0.2;//0.1;
+            else
+                this.target.y = this.target.defaultY - (fg.System.defaultSide * this.distance);//0.2;//0.1;
+        } else {
+            if (this.target.y < this.target.defaultY)
+                this.target.y += this.speed * fg.Timer.deltaTime;
+            else
+                this.target.y = this.target.defaultY;
+        }
+    },
+    moveDown: function () {
+        if (!this.target.defaultY) this.target.defaultY = this.target.y;
+        if (this.on) {
+            if (this.target.y < this.target.defaultY + (fg.System.defaultSide * this.distance))
+                this.target.y += this.speed * fg.Timer.deltaTime;//0.2;//0.1;
+            else
+                this.target.y = this.target.defaultY + (fg.System.defaultSide * this.distance);//0.2;//0.1;
+        } else {
+            if (this.target.y > this.target.defaultY)
+                this.target.y -= this.speed * fg.Timer.deltaTime;
+            else
+                this.target.y = this.target.defaultY;
+        }
+    },
+    moveLeft: function () {
+        if (!this.target.defaultX) this.target.defaultX = this.target.x;
+        this.target.addedSpeedX = 0;
+        if (this.on) {
+            if (this.target.x > this.target.defaultX - (fg.System.defaultSide * this.distance)) {
+                this.target.x -= this.speed * fg.Timer.deltaTime;//0.2;//0.1;
+                this.target.addedSpeedX = this.speed * -1;
+            } else
+                this.target.x = this.target.defaultX - (fg.System.defaultSide * this.distance);//0.2;//0.1;
+        } else {
+            if (this.target.x < this.target.defaultX) {
+                this.target.x += this.speed * fg.Timer.deltaTime;
+                this.target.addedSpeedX = this.speed;
+            } else
+                this.target.x = this.target.defaultX;
+        }
+    },
+    moveRight: function () {
+        if (!this.target.defaultX) this.target.defaultX = this.target.x;
+        if (this.on) {
+            if (this.target.x < this.target.defaultX + (fg.System.defaultSide * this.distance)) {
+                this.target.x += this.speed * fg.Timer.deltaTime;//0.2;//0.1;
+                this.target.addedSpeedX = this.speed;
+            } else
+                this.target.x = this.target.defaultX + (fg.System.defaultSide * this.distance);//0.2;//0.1;
+        } else {
+            if (this.target.x > this.target.defaultX) {
+                this.target.x -= this.speed * fg.Timer.deltaTime;
+                this.target.addedSpeedX = this.speed * -1;
+            } else
+                this.target.x = this.target.defaultX;
+        }
+    },
+    doAction: function () {
+        switch (this.direction) {
+            case "U":
+                this.moveUp();
+                break;
+            case "D":
+                this.moveDown();
+                break;
+            case "L":
+                this.moveLeft();
+                break;
+            case "R":
+                this.moveRight();
+                break;
+            default:
+                break;
+        }
+    }
+}
 fg.Switch = {
     on: false,
     defaulState: false,
     foreGround: true,
     target: undefined,
-    timed: true,
+    timed: false,
     timer: undefined,
     defaulTimer: 120,
     canChangeState: true,
     init: function () {
+        if (this.targetId) this.target = fg.Game.currentLevel.entities[this.targetId.split('-')[0]][this.targetId.split('-')[1]];
         this.timer = this.defaulTimer;
     },
     update: function () {
-        if (this.timer === undefined) this.init();
+        if (this.target === undefined) this.init();
         if (this.interacting) {
             if (this.interactor.x >= this.x && this.interactor.x + this.interactor.width <= this.x + this.width) {
                 if (this.canChangeState) {
                     this.on = !this.on;
                     this.canChangeState = false;
                 }
-                this.timer = this.defaulTimer;
+                if (this.timed) this.timer = this.defaulTimer;
+                if (this.pressure) this.on = true;
             }
         } else this.canChangeState = true;
 
@@ -625,6 +727,7 @@ fg.Switch = {
             this.timer--;
             if (this.timer <= 0) this.on = this.defaulState;
         }
+        if (this.doAction) this.doAction();
         fg.Interactive.update.call(this);
     },
     interact: function (obj) {
@@ -1054,7 +1157,7 @@ fg.Game =
         },
         start: function () {
             fg.System.init();
-            this.currentLevel = this.loadLevel("perfTest");
+            this.currentLevel = this.loadLevel("levelOne");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
             fg.Input.bind(fg.Input.KEY.LEFT_ARROW, "left");
@@ -1072,7 +1175,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 41, fg.System.defaultSide * 6, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 17, fg.System.defaultSide * 11, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
