@@ -254,6 +254,7 @@ fg.protoEntity = {
         this.index = index;
         this.collidable = this.type != TYPE.TUNNEL && this.type != TYPE.DARKNESS;
         this.segments = [];
+        this.backGround = true;
         return this;
     },
     draw: function (foreGround) {
@@ -592,7 +593,7 @@ fg.Wall = function (id, type, x, y, cx, cy, index) {
         return c;
     };
     if (type == TYPE.SWITCH)
-        wall = Object.assign(wall, fg.Interactive, fg.Switch, wall.moveTarget ? fg.MoveTarget : null);
+        wall = Object.assign(wall, fg.Interactive, fg.Switch, (wall.moveTarget || wall.growTarget) ? fg.ChangeTarget : null);
     if (type == TYPE.TUNNEL)
         wall = Object.assign(wall, fg.Tunnel);
     fg.Game.currentLevel.applySettingsToEntity(wall);
@@ -613,19 +614,19 @@ fg.Interactive = {
     }
 }
 
-fg.MoveTarget = {
+fg.ChangeTarget = {
     distance: 1,
     direction: "U",
     speed: 0.06,
     moveUp: function () {
         if (!this.target.defaultY) this.target.defaultY = this.target.y;
         if (this.on) {
-            if (this.target.y > this.target.defaultY - (fg.System.defaultSide * this.distance))
+            if (this.target.y - (this.speed * fg.Timer.deltaTime) > this.target.defaultY - (fg.System.defaultSide * this.distance))
                 this.target.y -= this.speed * fg.Timer.deltaTime;//0.2;//0.1;
             else
                 this.target.y = this.target.defaultY - (fg.System.defaultSide * this.distance);//0.2;//0.1;
         } else {
-            if (this.target.y < this.target.defaultY)
+            if (this.target.y + (this.speed * fg.Timer.deltaTime) < this.target.defaultY)
                 this.target.y += this.speed * fg.Timer.deltaTime;
             else
                 this.target.y = this.target.defaultY;
@@ -634,12 +635,12 @@ fg.MoveTarget = {
     moveDown: function () {
         if (!this.target.defaultY) this.target.defaultY = this.target.y;
         if (this.on) {
-            if (this.target.y < this.target.defaultY + (fg.System.defaultSide * this.distance))
+            if (this.target.y + (this.speed * fg.Timer.deltaTime) < this.target.defaultY + (fg.System.defaultSide * this.distance))
                 this.target.y += this.speed * fg.Timer.deltaTime;//0.2;//0.1;
             else
                 this.target.y = this.target.defaultY + (fg.System.defaultSide * this.distance);//0.2;//0.1;
         } else {
-            if (this.target.y > this.target.defaultY)
+            if (this.target.y - (this.speed * fg.Timer.deltaTime) > this.target.defaultY)
                 this.target.y -= this.speed * fg.Timer.deltaTime;
             else
                 this.target.y = this.target.defaultY;
@@ -728,7 +729,23 @@ fg.Switch = {
             if (this.timer <= 0) this.on = this.defaulState;
         }
         if (this.doAction) this.doAction();
+        if (this.growTarget) this.handleYSegments();
         fg.Interactive.update.call(this);
+    },
+    handleYSegments: function () {
+        let size = Math.ceil((this.target.defaultY + this.target.height - this.target.y) / this.target.height) - 1;
+        while (this.target.segments.length > size) this.target.segments.pop();
+        if (size > 0) {
+            for (let i = 0; i < size; i++) {
+                if (!this.target.segments[i])
+                    this.target.segments[i] = Object.create(fg.protoEntity).init(i, this.target.type, this.target.x, this.target.defaultY - (i * this.target.height), 0, ((size == 1 ? 3 : 2) * this.target.height));
+            }
+        }
+        this.target.cacheY = this.target.segments.length > 0 ? this.height : 0;
+    },
+    drawTargetSegments: function () {
+        for (let i = 0, segment; segment = this.target.segments[i]; i++)
+            segment.draw();
     },
     interact: function (obj) {
         fg.Interactive.interact.call(this, obj);
@@ -767,6 +784,8 @@ fg.Switch = {
                 this.cacheX = this.width * 2;
         } else
             this.cacheX = 0
+
+        if (this.target.segments.length > 0) this.drawTargetSegments();
 
         fg.protoEntity.draw.call(this);
     }
@@ -1157,7 +1176,7 @@ fg.Game =
         },
         start: function () {
             fg.System.init();
-            this.currentLevel = this.loadLevel("levelOne");
+            this.currentLevel = this.loadLevel("perfTest");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
             fg.Input.bind(fg.Input.KEY.LEFT_ARROW, "left");
@@ -1175,7 +1194,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 17, fg.System.defaultSide * 11, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 30, fg.System.defaultSide * 2, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1244,6 +1263,9 @@ fg.Game =
                     if (loopCallBack)
                         (!caller ? loopCallBack : loopCallBack.bind(caller))(obj);
                     this.currentEntities.push(obj);
+                    if (obj.target && obj.target.segments)
+                        for (let index = 0, entity; entity = obj.target.segments[index]; index++)
+                            this.currentEntities.push(entity);
                 }
             }
 
