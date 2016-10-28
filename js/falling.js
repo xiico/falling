@@ -103,11 +103,14 @@ fg.protoLevel = {
     width: 0,
     levelSwiches: [],
     movingPlatforms: [],
+    customProperties: [],
     loadSettings: function () {
         if (window[this.name].levelSwiches)
             this.levelSwiches = window[this.name].levelSwiches;
         if (window[this.name].movingPlatforms)
             this.movingPlatforms = window[this.name].movingPlatforms;
+        if (window[this.name].customProperties)
+            this.customProperties = window[this.name].customProperties;
     },
     createEntities: function () {
         let rows = window[this.name].tiles.split('\n');
@@ -145,6 +148,7 @@ fg.protoLevel = {
                 settings = (this.levelSwiches.find(function (e) { return e.id == entity.id }) || {}).settings;
                 break;
             default:
+                settings = (this.customProperties.find(function (e) { return e.id == entity.id }) || {}).settings;
                 break;
         }
         if (settings) Object.assign(entity, settings);
@@ -281,7 +285,7 @@ fg.Active =
         speedY: 0,
         grounded: false,
         maxSpeedX: .14,//0.12
-        maxSpeedY: .4,
+        maxSpeedY: .25,
         entitiesToTest: [],
         searchDepth: 6,
         bounceness: 0.2,//0.75
@@ -328,7 +332,7 @@ fg.Active =
                 if (fg.Game.testOverlap(this.nextPosition, obj)) {
                     this.entitiesToResolveX.push(obj);
                     this.entitiesToResolveY.push(obj);
-                    if (this.entitiesToResolveX.length >= 3)
+                    if (this.entitiesToResolveX.length >= 4)
                         break;
                 }
             }
@@ -350,14 +354,14 @@ fg.Active =
                 let obj = entitiesToResolveX[entitiesToResolveX.length - 1];
                 this.resolveForX(entitiesToResolveX, obj);
                 county++;
-                if (county > 3) break;
+                if (county > 4) break;
             }
             this.y += this.speedY * fg.Timer.deltaTime;
             while (entitiesToResolveY.length > 0) {
                 let obj = entitiesToResolveY[entitiesToResolveY.length - 1];
                 this.resolveForY(entitiesToResolveY, obj);
                 countx++;
-                if (countx > 3) break;
+                if (countx > 4) break;
             }
         },
         resolveForX: function (entitiesToResolve, obj) {
@@ -376,12 +380,16 @@ fg.Active =
                     this.x = obj.x - this.width;
                 else
                     this.x = obj.x + obj.width;
-                this.speedX = this.speedX * -1;
-                if (obj.active)
-                    obj.speedX -= this.speedX * Math.max(this.bounceness, (obj.bounceness || 0));
-                this.speedX = Math.abs(this.speedX) * Math.max(this.bounceness, (obj.bounceness || 0)) >= 0.001 ? this.speedX * Math.max(this.bounceness, (obj.bounceness || 0)) : 0;
-                if (obj.type == TYPE.BOUNCER && Math.abs(this.speedX) < 0.2)
-                    this.speedX = this.speedX > 0 ? 0.2 : -0.2;
+                if (this.type != TYPE.ACTOR || !obj.active) {
+                    this.speedX = this.speedX * -1;
+                    if (obj.active)
+                        obj.speedX -= this.speedX * Math.max(this.bounceness, (obj.bounceness || 0));
+                    this.speedX = Math.abs(this.speedX) * Math.max(this.bounceness, (obj.bounceness || 0)) >= 0.001 ? this.speedX * Math.max(this.bounceness, (obj.bounceness || 0)) : 0;
+                    if (obj.type == TYPE.BOUNCER && Math.abs(this.speedX) < 0.2)
+                        this.speedX = this.speedX > 0 ? 0.2 : -0.2;
+                } else {
+                    this.processActorCollisionX(obj);
+                }
             } else {
                 if (Math.round((this.y + intersection.height) * 100) / 100 >= Math.round((obj.y + obj.height) * 100) / 100)
                     this.y = obj.y + obj.height;
@@ -390,6 +398,10 @@ fg.Active =
                 if (Math.abs(this.y - this.lastPosition.y) >= obj.height)
                     this.y = this.lastPosition.y;
             }
+        },
+        processActorCollisionX: function (obj) {
+            if (this.glove) obj.speedX = Math.abs(this.speedX) > this.accelX ? 0 : this.speedX;
+            this.speedX = 0;
         },
         slopeXcollision: function (obj) { },
         resolveForY: function (entitiesToResolve, obj) {
@@ -708,7 +720,13 @@ fg.Switch = {
     defaulTimer: 120,
     canChangeState: true,
     init: function () {
-        if (this.targetId) this.target = fg.Game.currentLevel.entities[this.targetId.split('-')[0]][this.targetId.split('-')[1]];
+        if (this.targetId) {
+            this.target = fg.Game.currentLevel.entities[this.targetId.split('-')[0]][this.targetId.split('-')[1]];
+            this.target.drawSegments = this.drawSegments;
+            this.target.update = function (bj) {
+                if (this.drawSegments) this.drawSegments();
+            }
+        }
         this.timer = this.defaulTimer;
     },
     update: function () {
@@ -737,15 +755,17 @@ fg.Switch = {
         while (this.target.segments.length > size) this.target.segments.pop();
         if (size > 0) {
             for (let i = 0; i < size; i++) {
-                if (!this.target.segments[i])
+                if (!this.target.segments[i]) {
                     this.target.segments[i] = Object.create(fg.protoEntity).init(i, this.target.type, this.target.x, this.target.defaultY - (i * this.target.height), 0, ((size == 1 ? 3 : 2) * this.target.height));
+                    this.target.segments[i].foreGround = true;//Gambiarra =(
+                }
             }
         }
         this.target.cacheY = this.target.segments.length > 0 ? this.height : 0;
     },
-    drawTargetSegments: function () {
-        for (let i = 0, segment; segment = this.target.segments[i]; i++)
-            segment.draw();
+    drawSegments: function () {
+        for (let i = 0, segment; segment = this.segments[i]; i++)
+            fg.Game.foreGroundEntities.push(segment);
     },
     interact: function (obj) {
         fg.Interactive.interact.call(this, obj);
@@ -785,10 +805,12 @@ fg.Switch = {
         } else
             this.cacheX = 0
 
-        if (this.target.segments.length > 0) this.drawTargetSegments();
-
         fg.protoEntity.draw.call(this);
     }
+}
+
+fg.MarioTile = {
+
 }
 
 fg.MovingPlatform = {
@@ -1044,7 +1066,7 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
 
         return c;
     };
-
+    fg.Game.currentLevel.applySettingsToEntity(crate);
     return crate;
 }
 
@@ -1056,6 +1078,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.color = "red";
     actor.canJump = true;
     actor.active = false;
+    actor.glove = true;
     actor.drawTile = function (c, ctx) {
         c.width = this.width * 2;
         c.height = this.height;
@@ -1176,7 +1199,7 @@ fg.Game =
         },
         start: function () {
             fg.System.init();
-            this.currentLevel = this.loadLevel("perfTest");
+            this.currentLevel = this.loadLevel("levelOne");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
             fg.Input.bind(fg.Input.KEY.LEFT_ARROW, "left");
@@ -1194,7 +1217,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 30, fg.System.defaultSide * 2, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 244, fg.System.defaultSide * 51, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1319,6 +1342,14 @@ fg.Game =
 
 fg.Render = {
     cached: {},
+    offScreenRender: function () {
+        if (!this.hc) {
+            this.hc = fg.$new("canvas");
+            return this.hc;
+        }
+        else
+            return this.hc;
+    },
     preRenderCanvas: function () { return fg.$new("canvas"); },
     draw: function (data, mapX, mapY, cacheX, cacheY, width, height) {
         fg.System.context.drawImage(data, cacheX, cacheY, width, height,
