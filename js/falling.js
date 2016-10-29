@@ -520,6 +520,8 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
             return fg.Slope(id, type, x, y, cx, cy, index);
         case TYPE.CIRCLE:
             return fg.Circle(id, type, x, y, cx, cy, index);
+        case TYPE.MARIO:
+            return fg.Mario(id, type, x, y, cx, cy, index);
         default:
             return Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index);
     }
@@ -809,7 +811,23 @@ fg.Switch = {
     }
 }
 
-fg.MarioTile = {
+fg.Mario = function (id, type, x, y, cx, cy, index) {
+    return Object.assign(
+        Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+            drawTile: function (c, ctx) {
+                c.width = this.width * 4;
+                c.height = this.height * fg.System.defaultSide;
+                let colorA = "rgba(201,152,86,1)";
+                let colorB = "rgba(224,190,80,1)";
+                ctx.fillStyle = colorA;
+                ctx.fillRect(24, 0, 72, 24);
+                ctx.fillRect(79, 7, 10, 10);
+                return c;
+            },
+            spackles:function(){
+
+            }
+        });
 }
 
 fg.MovingPlatform = {
