@@ -810,7 +810,6 @@ fg.Switch = {
 }
 
 fg.MarioTile = {
-
 }
 
 fg.MovingPlatform = {
