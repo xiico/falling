@@ -814,18 +814,117 @@ fg.Switch = {
 fg.Mario = function (id, type, x, y, cx, cy, index) {
     return Object.assign(
         Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+            cacheX: fg.System.defaultSide*3,
             drawTile: function (c, ctx) {
                 c.width = this.width * 4;
                 c.height = this.height * fg.System.defaultSide;
                 let colorA = "rgba(201,152,86,1)";
-                let colorB = "rgba(224,190,80,1)";
                 ctx.fillStyle = colorA;
-                ctx.fillRect(24, 0, 72, 24);
+                ctx.fillRect(0, 0, 72, 24);
                 ctx.fillRect(79, 7, 10, 10);
+                //draw speckles
+                this.speckles(ctx);
+                //draw sides tiles
+                this.sides(ctx);
+                //draw inner corners
+                this.innerCorners(ctx);
+                //draw outer corners
+                this.outerCorners(ctx);
                 return c;
             },
-            spackles:function(){
-
+            drawColor: function (ctx, t_x, t_y, t_w, t_h, color) {
+                ctx.fillStyle = color;
+                for (let index = 0; index < t_x.length; index++)
+                    ctx.fillRect(t_x[index], t_y[index], t_w[index], t_h[index]);
+            },
+            sides: function (ctx) {
+                let colorOne = "rgb(120,105,24)";//DarkBrown
+                let t_x = [24,29,30,31,36,40,41,41],
+                    t_y = [17, 0, 7,16, 6,12, 5,17],
+                    t_w = [ 7, 2, 2, 5, 5, 2, 7, 2],
+                    t_h = [ 2, 7, 5, 2, 2, 5, 2, 7];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
+                let colorTwo = "rgb(0,201,1)";//LightGreen
+                    t_x = [24,25,36,43];
+                    t_y = [19, 0, 1,12];
+                    t_w = [12, 4,12, 4];
+                    t_h = [ 4,12, 4,12];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
+                let colorThree = "rgb(0,120,72)";//DarkGreen
+                    t_x = [24,27,27,28,28,28,29,30,32,35,36,37,40,42,42,43,43,43,44,45];
+                    t_y = [19, 3,20, 0, 6,11, 8,19,18,19, 4, 5, 4, 3,13,12,16,21,18, 4];
+                    t_w = [ 3, 1, 3, 1, 1, 1, 1, 2, 3, 1, 1, 3, 2, 3, 1, 1, 1, 1, 1, 3];
+                    t_h = [ 1, 3, 1, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 2, 3, 3, 1];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);      
+                let colorFour = "rgb(0,0,0)";//Black
+                    t_x = [24,24,24,27,28,29,29,29,30,30,32,35,36,36,37,40,41,42,42,42,42,43,45,47];
+                    t_y = [ 0,18,23,19, 3, 0, 6,11, 8,18,17,18, 0, 5, 6, 5,13, 4,12,16,21,18, 5,12];
+                    t_w = [ 1, 3,12, 3, 1, 1, 1, 1, 1, 2, 3, 1,12, 1, 3, 2, 1, 3, 1, 1, 1, 1, 3, 1];
+                    t_h = [12, 1, 1, 1, 3, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 2, 3, 3, 1,12];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);                             
+            },
+            innerCorners: function(ctx){
+                let colorOne = "rgb(120,105,24)";//DarkBrown
+                let t_x = [54,55,53,58,59,66,],
+                    t_y = [ 7, 6,10,18, 5,11,],
+                    t_w = [12,10, 1, 3, 3, 1,],
+                    t_h = [10,12, 3, 1, 1, 3,];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
+                let colorTwo = "rgb(0,201,1)";//LightGreen
+                    t_x = [56];
+                    t_y = [ 8];
+                    t_w = [ 8];
+                    t_h = [ 8];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
+                let colorThree = "rgb(0,120,72)";//DarkGreen
+                    t_x = [55,56,56,57,57,59,59,61,61,63,63,64];
+                    t_y = [11, 8,13, 8,15, 7,16, 8,15, 8,13,11];
+                    t_w = [ 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1];
+                    t_h = [ 2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);      
+                let colorFour = "rgb(0,0,0)";//Black
+                    t_x = [54,55,55,56,56,59,59,61,61,64,64,65];
+                    t_y = [11, 8,13, 7,16, 6,17, 7,16, 8,13,11];
+                    t_w = [ 1, 1, 1, 3, 3, 2, 2, 3, 3, 1, 1, 1];
+                    t_h = [ 2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);     
+            },
+            outerCorners: function (ctx) {
+                let colorOne = "rgb(120,105,24)";//DarkBrown
+                let t_x = [77,77,79,83,88,89,85,79,79,84,88,82],
+                    t_y = [ 5,11,16,17,13, 7, 5, 5,12,16,10, 7],
+                    t_w = [ 3, 2, 4, 6, 3, 2, 4, 6, 1, 2, 1, 2],
+                    t_h = [ 6, 6, 3, 2, 4, 6, 3, 2, 2, 1, 2, 1];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
+                let colorTwo = "rgb(0,0,0)";//Black
+                    t_x = [72,73,74,74,76,76,89,89,91,91,77,77,80,82,84,86,90,90];
+                    t_y = [ 4, 2, 1,17, 0,19, 1,17, 2, 4, 8,12,18, 5,18, 5,10,14];
+                    t_w = [ 5, 4, 5, 5,16,16, 5, 5, 4, 5, 1, 1, 2, 2, 2, 2, 1, 1];
+                    t_h = [16,20, 6, 6, 5, 5, 6, 6,20,16, 2, 2, 1, 1, 1, 1, 2, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
+                let colorThree = "rgb(0,120,72)";//DarkGreen
+                    t_x = [76,75,76,78,78,90,90,92,76,76,80,82,84,86,91,91];
+                    t_y = [ 4, 6,18,20, 3, 4,18, 6, 8,12,19, 4,19, 4,10,14];
+                    t_w = [ 2, 1, 2,12,12, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1];
+                    t_h = [ 2,12, 2, 1, 1, 2, 2,12, 2, 2, 1, 1, 1, 1, 2, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);      
+                let colorFour = "rgb(0,201,1)";//LightGreen
+                    t_x = [74,73,74,76,91,93,91,76,75,75,75,75,77,80,84,90,92,92,92,92,90,86,82,77];
+                    t_y = [ 2, 4,19,21,19, 4, 2, 1, 5, 8,12,18,20,20,20,20,18,14,10, 5, 3, 3, 3, 3];
+                    t_w = [ 3, 2, 3,16, 3, 2, 3,16, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1];
+                    t_h = [ 3,16, 3, 2, 3,16, 3, 2, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);                             
+            },
+            speckles: function (ctx) {
+                let colorB = "rgba(224,190,80,1)";
+                let t_x = [3, 6, 8, 8,13,15,15,16,18,20],
+                    t_y = [8,11, 5,17,14, 2,20, 8,14, 4],
+                    t_w = [1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
+                    t_h = [3, 3, 3, 3, 2, 3, 2, 3, 3, 2];
+                ctx.fillStyle = colorB;
+                for (let t = 0; t < 4; t++)
+                    for (let index = 0; index < 10; index++)
+                        ctx.fillRect(t_x[index] + (t * this.width), t_y[index], t_w[index], t_h[index]);
             }
         });
 }
@@ -1142,7 +1241,7 @@ fg.System =
     {
         context: null,
         defaultSide: 24,//24
-        searchDepth: 16,
+        searchDepth: 16,//16
         canvas: null,
         platform: {},
         init: function () {
@@ -1234,7 +1333,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 244, fg.System.defaultSide * 51, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 40, fg.System.defaultSide * 40, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
