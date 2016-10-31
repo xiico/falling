@@ -267,14 +267,20 @@ fg.protoEntity = {
             let ctx = c.getContext("2d");
             c = this.drawTile(c, ctx);
             if (c)
-                fg.Render.draw(fg.Render.cache(this.type, c), this.x, this.y, this.cacheX, this.cacheY, this.width, this.height);
+                fg.Render.draw(fg.Render.cache(this.type, c), this.cacheX, this.cacheY, this.width, this.height, this.x, this.y);
         }
         else {
             if (!foreGround && !this.backGround || foreGround && !this.foreGround) return;
-            fg.Render.draw(fg.Render.cached[this.type], this.x, this.y, this.cacheX, this.cacheY, this.width, this.height);
+            fg.Render.draw(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.width, this.height, this.x, this.y);
         }
     },
-    drawTile: function () { },
+    drawTile: function (c, ctx) {
+        c.width = this.width;
+        c.height = this.height;
+        ctx.fillStyle = 'rgba(0,0,0,.75)';
+        ctx.fillRect(0, 0, this.height, this.width);
+        return c;
+    },
     update: function () { }
 }
 
@@ -807,21 +813,24 @@ fg.Switch = {
         } else
             this.cacheX = 0
 
-        fg.protoEntity.draw.call(this);
+        fg.protoEntity.draw.call(this,foreGround);
     }
 }
 
 fg.Mario = function (id, type, x, y, cx, cy, index) {
     return Object.assign(
         Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
-            cacheX: fg.System.defaultSide*3,
+            cacheX: fg.System.defaultSide * 3,
+            edges: undefined,
+            tileSet: "",
             drawTile: function (c, ctx) {
-                c.width = this.width * 4;
-                c.height = this.height * fg.System.defaultSide;
+                c.width = this.width * 5;
+                c.height = this.height;
                 let colorA = "rgba(201,152,86,1)";
                 ctx.fillStyle = colorA;
                 ctx.fillRect(0, 0, 72, 24);
                 ctx.fillRect(79, 7, 10, 10);
+                ctx.fillRect(96, 0, 24, 24);
                 //draw speckles
                 this.speckles(ctx);
                 //draw sides tiles
@@ -830,7 +839,60 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.innerCorners(ctx);
                 //draw outer corners
                 this.outerCorners(ctx);
+                //mirror sides
+                ctx.save();
+                ctx.translate(c.width + fg.System.defaultSide, 0);
+                ctx.scale(-1, 1);
+                this.sides(ctx);
+                ctx.restore();
                 return c;
+            },
+            update: function () {
+                if (this.tileSet == "")
+                    this.setSubTiles();
+            },
+            draw: function (foreGround) {
+                if (this.tileSet == "00010203" || this.tileSet == "30313233") {
+                    if (this.tileSet == "00010203") 
+                        this.cacheX = 0;
+                     else 
+                        this.cacheX = this.width * 3;
+                } else {
+                    
+                }
+                fg.protoEntity.draw.call(this, foreGround);
+            },
+            setEdges: function () {
+                this.edges = [];
+                let i = parseInt(this.id.split('-')[0]), k = parseInt(this.id.split('-')[1]);
+                let objs = fg.Game.currentLevel.entities;
+                this.edges.push(objs[i - 1][k + 0] && objs[i - 1][k + 0].type == TYPE.MARIO && !objs[i - 1][k + 0].vanished ? 1 : 0);
+                this.edges.push(objs[i - 1][k + 1] && objs[i - 1][k + 1].type == TYPE.MARIO && !objs[i - 1][k + 1].vanished ? 1 : 0);
+                this.edges.push(objs[i - 0][k + 1] && objs[i - 0][k + 1].type == TYPE.MARIO && !objs[i - 0][k + 1].vanished ? 1 : 0);
+                this.edges.push(objs[i + 1][k + 1] && objs[i + 1][k + 1].type == TYPE.MARIO && !objs[i + 1][k + 1].vanished ? 1 : 0);
+                this.edges.push(objs[i + 1][k + 0] && objs[i + 1][k + 0].type == TYPE.MARIO && !objs[i + 1][k + 0].vanished ? 1 : 0);
+                this.edges.push(objs[i + 1][k - 1] && objs[i + 1][k - 1].type == TYPE.MARIO && !objs[i + 1][k - 1].vanished ? 1 : 0);
+                this.edges.push(objs[i - 0][k - 1] && objs[i - 0][k - 1].type == TYPE.MARIO && !objs[i - 0][k - 1].vanished ? 1 : 0);
+                this.edges.push(objs[i - 1][k - 1] && objs[i - 1][k - 1].type == TYPE.MARIO && !objs[i - 1][k - 1].vanished ? 1 : 0);
+            },
+            getSubTiles: function (tileA, tileB, tileC, index) {
+                if (tileA == 1 && tileB == 1 && tileC == 1)
+                    this.tileSet += "0" + index;
+                else if (tileA == 1 && tileB == 0 && tileC == 1)  
+                    this.tileSet += "2" + index;
+                else if (tileA == 1 && tileC == 0)  
+                    this.tileSet += "4" + index;           
+                else if (tileA == 0 && tileC == 1)  
+                    this.tileSet += "1" + index;                                 
+                else
+                    this.tileSet += "3" + index;
+            },
+            setSubTiles: function () {
+                this.setEdges();
+                this.tileSet = "";
+                for (let i = 0; i <= 6; i += 2)
+                    this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] || this.edges[i]), i / 2);
+
             },
             drawColor: function (ctx, t_x, t_y, t_w, t_h, color) {
                 ctx.fillStyle = color;
@@ -922,7 +984,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                     t_w = [1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
                     t_h = [3, 3, 3, 3, 2, 3, 2, 3, 3, 2];
                 ctx.fillStyle = colorB;
-                for (let t = 0; t < 4; t++)
+                for (let t = 0; t < 5; t++)
                     for (let index = 0; index < 10; index++)
                         ctx.fillRect(t_x[index] + (t * this.width), t_y[index], t_w[index], t_h[index]);
             }
@@ -1333,7 +1395,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 40, fg.System.defaultSide * 40, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 40, fg.System.defaultSide * 40, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1467,7 +1529,7 @@ fg.Render = {
             return this.hc;
     },
     preRenderCanvas: function () { return fg.$new("canvas"); },
-    draw: function (data, mapX, mapY, cacheX, cacheY, width, height) {
+    draw: function (data, cacheX, cacheY, width, height, mapX, mapY) {
         fg.System.context.drawImage(data, cacheX, cacheY, width, height,
             Math.floor(mapX - fg.Game.screenOffsetX), Math.floor(mapY - fg.Game.screenOffsetY), width, height);
     },
