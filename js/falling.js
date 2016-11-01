@@ -71,6 +71,63 @@
 }
 )(window);
 
+fg.System =
+    {
+        context: null,
+        defaultSide: 24,//24
+        searchDepth: 16,//16
+        canvas: null,
+        platform: {},
+        init: function () {
+            this.canvas = fg.$("#main");
+            this.context = this.canvas.getContext("2d");
+            this.platform.iPhone = /iPhone/i.test(navigator.userAgent);
+            this.platform.iPad = /iPad/i.test(navigator.userAgent);
+            this.platform.android = /android/i.test(navigator.userAgent);
+            this.platform.iOS = this.platform.iPhone || this.platform.iPad;
+            this.platform.mobile = this.platform.iOS || this.platform.android;
+            if (this.platform.mobile)
+                this.renderMobileInput();
+        },
+        renderMobileInput: function () {
+            let auxCanvas = document.createElement('canvas');
+            auxCanvas.width = 64;
+            auxCanvas.height = 64;
+            let auxCanvasCtx = auxCanvas.getContext('2d');
+
+            let imgLeft = document.getElementById("btnMoveLeft");
+            auxCanvasCtx.beginPath();
+            auxCanvasCtx.fillStyle = "#aaaaaa";
+            auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
+            auxCanvasCtx.fillStyle = "#000000";
+            auxCanvasCtx.moveTo(48, 16);
+            auxCanvasCtx.lineTo(48, 48);
+            auxCanvasCtx.lineTo(16, 32);
+            auxCanvasCtx.fill();
+            imgLeft.src = auxCanvas.toDataURL("image/png");
+
+            let imgRight = document.getElementById("btnMoveRight");
+            auxCanvasCtx.beginPath();
+            auxCanvasCtx.fillStyle = "#aaaaaa";
+            auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
+            auxCanvasCtx.fillStyle = "#000000";
+            auxCanvasCtx.moveTo(16, 16);
+            auxCanvasCtx.lineTo(16, 48);
+            auxCanvasCtx.lineTo(48, 32);
+            auxCanvasCtx.fill();
+            imgRight.src = auxCanvas.toDataURL("image/png");
+
+            let imgJump = document.getElementById("btnJump");
+            auxCanvasCtx.beginPath();
+            auxCanvasCtx.fillStyle = "#aaaaaa";
+            auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
+            auxCanvasCtx.fillStyle = "#000000";
+            auxCanvasCtx.arc(auxCanvas.width / 2, auxCanvas.height / 2, 16, 0, 2 * Math.PI);
+            auxCanvasCtx.fill();
+            imgJump.src = auxCanvas.toDataURL("image/png");
+        }
+    }
+
 
 fg.Camera = {
     following: null,
@@ -245,11 +302,13 @@ fg.protoLevel = {
 
 fg.protoEntity = {
     index: 0,
+    width: fg.System.defaultSide,
+    height: fg.System.defaultSide,
+    cacheWidth: fg.System.defaultSide,
+    cacheHeight: fg.System.defaultSide,
     init: function (id, type, x, y, cx, cy, index) {
         this.type = type;
         this.id = id;
-        this.width = fg.System.defaultSide;
-        this.height = fg.System.defaultSide;
         this.color = "black";
         this.x = x;
         this.y = y;
@@ -267,11 +326,11 @@ fg.protoEntity = {
             let ctx = c.getContext("2d");
             c = this.drawTile(c, ctx);
             if (c)
-                fg.Render.draw(fg.Render.cache(this.type, c), this.cacheX, this.cacheY, this.width, this.height, this.x, this.y);
+                fg.Render.draw(fg.Render.cache(this.type, c), this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
         }
         else {
             if (!foreGround && !this.backGround || foreGround && !this.foreGround) return;
-            fg.Render.draw(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.width, this.height, this.x, this.y);
+            fg.Render.draw(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
         }
     },
     drawTile: function (c, ctx) {
@@ -820,13 +879,14 @@ fg.Switch = {
 fg.Mario = function (id, type, x, y, cx, cy, index) {
     return Object.assign(
         Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
-            cacheX: fg.System.defaultSide * 3,
+            cacheX: fg.System.defaultSide * 0,
             edges: undefined,
             tileSet: "",
+            cachePosition: [{ x: 12, y: 0 }, { x: 12, y: 12 }, { x: 0, y: 12 }, { x: 0, y: 0 }],
             drawTile: function (c, ctx) {
-                c.width = this.width * 5;
+                c.width = this.width * 32;
                 c.height = this.height;
-                let colorA = "rgba(201,152,86,1)";
+                let colorA = "rgb(201,152,86)";
                 ctx.fillStyle = colorA;
                 ctx.fillRect(0, 0, 72, 24);
                 ctx.fillRect(79, 7, 10, 10);
@@ -841,7 +901,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.outerCorners(ctx);
                 //mirror sides
                 ctx.save();
-                ctx.translate(c.width + fg.System.defaultSide, 0);
+                ctx.translate(c.width - (fg.System.defaultSide*26), 0);
                 ctx.scale(-1, 1);
                 this.sides(ctx);
                 ctx.restore();
@@ -850,18 +910,25 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             update: function () {
                 if (this.tileSet == "")
                     this.setSubTiles();
-            },
+            },/*
             draw: function (foreGround) {
                 if (this.tileSet == "00010203" || this.tileSet == "30313233") {
                     if (this.tileSet == "00010203") 
                         this.cacheX = 0;
                      else 
                         this.cacheX = this.width * 3;
-                } else {
-                    
+                } else {                    
+                    // for(let i = 0; i <= 6; i += 2){
+                    //     this.cacheX = (parseInt(this.tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[this.tileSet[i + 1]].x);
+                    //     this.cacheY = parseInt(this.cachePosition[this.tileSet[i + 1]].y);
+                    //     this.cacheWidth = fg.System.defaultSide/2;
+                    //     this.cacheHeight = fg.System.defaultSide/2;
+                    //     fg.protoEntity.draw.call(this, foreGround, this.cachePosition[i/2]);
+                    // }
+                    // return;
                 }
                 fg.protoEntity.draw.call(this, foreGround);
-            },
+            },*/
             setEdges: function () {
                 this.edges = [];
                 let i = parseInt(this.id.split('-')[0]), k = parseInt(this.id.split('-')[1]);
@@ -879,7 +946,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 if (tileA == 1 && tileB == 1 && tileC == 1)
                     this.tileSet += "0" + index;
                 else if (tileA == 1 && tileB == 0 && tileC == 1)  
-                    this.tileSet += "2" + index;
+                    this.tileSet += "2" + (2 + index) % 4;
                 else if (tileA == 1 && tileC == 0)  
                     this.tileSet += "4" + index;           
                 else if (tileA == 0 && tileC == 1)  
@@ -888,11 +955,35 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                     this.tileSet += "3" + index;
             },
             setSubTiles: function () {
+                if (!fg.Render.cached[this.type]) return;
                 this.setEdges();
                 this.tileSet = "";
                 for (let i = 0; i <= 6; i += 2)
-                    this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] || this.edges[i]), i / 2);
+                    this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] === undefined ? this.edges[0] : this.edges[i + 2]), i / 2);
 
+                if (this.tileSet == "00010203" || this.tileSet == "30313233") {
+                    if (this.tileSet == "00010203")
+                        this.cacheX = 0;
+                    else
+                        this.cacheX = this.width * 3;
+                    return;
+                }
+                
+                if (!fg.Render.marioCache[this.tileSet]) {
+                    for (let i = 0; i <= 6; i += 2) {
+                        this.cacheX = (parseInt(this.tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[this.tileSet[i + 1]].x);
+                        this.cacheY = parseInt(this.cachePosition[this.tileSet[i + 1]].y);
+                        this.cacheWidth = fg.System.defaultSide / 2;
+                        this.cacheHeight = fg.System.defaultSide / 2;
+                        fg.Render.drawOffScreen(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.cachePosition[this.tileSet[i + 1]].x, this.cachePosition[this.tileSet[i + 1]].y);
+                    }
+                    this.cacheY = 0;
+                    this.cacheWidth = fg.System.defaultSide;
+                    this.cacheHeight = fg.System.defaultSide;
+                    fg.Render.marioCache[this.tileSet] = (5 + Object.keys(fg.Render.marioCache).length) * fg.System.defaultSide;
+                    fg.Render.drawToCache(fg.Render.offScreenRender(), fg.Render.marioCache[this.tileSet], 0, this.type);
+                }
+                this.cacheX = fg.Render.marioCache[this.tileSet];
             },
             drawColor: function (ctx, t_x, t_y, t_w, t_h, color) {
                 ctx.fillStyle = color;
@@ -1223,6 +1314,8 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
     crate.init(id, type, x, y, cx, cy, index);
     crate.width = fg.System.defaultSide / 2;
     crate.height = fg.System.defaultSide / 2;
+    crate.cacheWidth = crate.width;
+    crate.cacheHeight = crate.height;
     crate.drawTile = function (c, ctx) {
         c.width = this.width * 2;
         c.height = this.height;
@@ -1257,6 +1350,8 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.canJump = true;
     actor.active = false;
     actor.glove = true;
+    actor.cacheWidth = actor.width;
+    actor.cacheHeight = actor.height;
     actor.drawTile = function (c, ctx) {
         c.width = this.width * 2;
         c.height = this.height;
@@ -1298,63 +1393,6 @@ fg.Level = function (name) {
     level.init(name);
     return level;
 }
-
-fg.System =
-    {
-        context: null,
-        defaultSide: 24,//24
-        searchDepth: 16,//16
-        canvas: null,
-        platform: {},
-        init: function () {
-            this.canvas = fg.$("#main");
-            this.context = this.canvas.getContext("2d");
-            this.platform.iPhone = /iPhone/i.test(navigator.userAgent);
-            this.platform.iPad = /iPad/i.test(navigator.userAgent);
-            this.platform.android = /android/i.test(navigator.userAgent);
-            this.platform.iOS = this.platform.iPhone || this.platform.iPad;
-            this.platform.mobile = this.platform.iOS || this.platform.android;
-            if (this.platform.mobile)
-                this.renderMobileInput();
-        },
-        renderMobileInput: function () {
-            let auxCanvas = document.createElement('canvas');
-            auxCanvas.width = 64;
-            auxCanvas.height = 64;
-            let auxCanvasCtx = auxCanvas.getContext('2d');
-
-            let imgLeft = document.getElementById("btnMoveLeft");
-            auxCanvasCtx.beginPath();
-            auxCanvasCtx.fillStyle = "#aaaaaa";
-            auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
-            auxCanvasCtx.fillStyle = "#000000";
-            auxCanvasCtx.moveTo(48, 16);
-            auxCanvasCtx.lineTo(48, 48);
-            auxCanvasCtx.lineTo(16, 32);
-            auxCanvasCtx.fill();
-            imgLeft.src = auxCanvas.toDataURL("image/png");
-
-            let imgRight = document.getElementById("btnMoveRight");
-            auxCanvasCtx.beginPath();
-            auxCanvasCtx.fillStyle = "#aaaaaa";
-            auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
-            auxCanvasCtx.fillStyle = "#000000";
-            auxCanvasCtx.moveTo(16, 16);
-            auxCanvasCtx.lineTo(16, 48);
-            auxCanvasCtx.lineTo(48, 32);
-            auxCanvasCtx.fill();
-            imgRight.src = auxCanvas.toDataURL("image/png");
-
-            let imgJump = document.getElementById("btnJump");
-            auxCanvasCtx.beginPath();
-            auxCanvasCtx.fillStyle = "#aaaaaa";
-            auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
-            auxCanvasCtx.fillStyle = "#000000";
-            auxCanvasCtx.arc(auxCanvas.width / 2, auxCanvas.height / 2, 16, 0, 2 * Math.PI);
-            auxCanvasCtx.fill();
-            imgJump.src = auxCanvas.toDataURL("image/png");
-        }
-    }
 
 fg.Game =
     {
@@ -1519,14 +1557,23 @@ fg.Game =
     }
 
 fg.Render = {
+    marioCache: {},
     cached: {},
     offScreenRender: function () {
         if (!this.hc) {
             this.hc = fg.$new("canvas");
+            this.hc.width = fg.System.defaultSide
+            this.hc.width = fg.System.defaultSide
             return this.hc;
         }
         else
             return this.hc;
+    },
+    drawOffScreen: function (data, cacheX, cacheY, width, height, mapX, mapY) {
+        this.offScreenRender().getContext('2d').drawImage(data, cacheX, cacheY, width, height, mapX, mapY, width, height);
+    },
+    drawToCache: function(data, x, y, type) {
+        this.cached[type].getContext('2d').drawImage(data, x, y);
     },
     preRenderCanvas: function () { return fg.$new("canvas"); },
     draw: function (data, cacheX, cacheY, width, height, mapX, mapY) {
