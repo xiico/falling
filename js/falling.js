@@ -975,7 +975,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                         this.cacheY = parseInt(this.cachePosition[this.tileSet[i + 1]].y);
                         this.cacheWidth = fg.System.defaultSide / 2;
                         this.cacheHeight = fg.System.defaultSide / 2;
-                        fg.Render.drawOffScreen(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.cachePosition[this.tileSet[i + 1]].x, this.cachePosition[this.tileSet[i + 1]].y);
+                        fg.Render.drawOffScreen(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.cachePosition[i/2].x, this.cachePosition[i/2].y);
                     }
                     this.cacheY = 0;
                     this.cacheWidth = fg.System.defaultSide;
