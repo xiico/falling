@@ -143,8 +143,8 @@ fg.Camera = {
     update: function () {
         if (!this.following)
             return;
-        fg.Game.screenOffsetX = Math.min(Math.max(this.following.x + (this.following.width / 2) - (fg.System.canvas.width / 2), 0), fg.Game.currentLevel.width - fg.System.canvas.width);
-        fg.Game.screenOffsetY = Math.min(Math.max(this.following.y + (this.following.height / 2) - (fg.System.canvas.height / 2), 0), fg.Game.currentLevel.height - fg.System.canvas.height);
+        fg.Game.screenOffsetX = Math.round(Math.min(Math.max(this.following.x + (this.following.width / 2) - (fg.System.canvas.width / 2), 0), fg.Game.currentLevel.width - fg.System.canvas.width));
+        fg.Game.screenOffsetY = Math.floor(Math.min(Math.max(this.following.y + (this.following.height / 2) - (fg.System.canvas.height / 2), 0), fg.Game.currentLevel.height - fg.System.canvas.height));
         this.left = fg.Game.screenOffsetX;
         this.top = fg.Game.screenOffsetY;
         this.right = fg.Game.screenOffsetX + fg.System.canvas.width;
@@ -161,6 +161,7 @@ fg.protoLevel = {
     levelSwiches: [],
     movingPlatforms: [],
     customProperties: [],
+    marioBuffer: [],
     loadSettings: function () {
         if (window[this.name].levelSwiches)
             this.levelSwiches = window[this.name].levelSwiches;
@@ -172,15 +173,14 @@ fg.protoLevel = {
     createEntities: function () {
         let rows = window[this.name].tiles.split('\n');
         for (let i = 0, row; row = rows[i]; i++) {
-            if (!this.entities[i])
-                this.entities[i] = [];
+            if (!this.entities[i]) this.entities[i] = [];
             for (let k = 0, col; col = row[k]; k++) {
                 if (!col.match(/[ #\d]/g)) {
                     let cx = 0, cy = 0, idx = 0;
                     if ((!row[k + 1] || !row[k + 1].match(/[\d]/g)) && (!rows[i + 1] || !rows[i + 1][k].match(/[\d]/g))) {
                         this.entities[i][k] = fg.Entity(i + "-" + k, col, fg.System.defaultSide * k, fg.System.defaultSide * i, 0, 0, 0);
-                        if (this.entities[i][k].setYs)
-                            this.entities[i][k].setYs(null, null);
+                        if (this.entities[i][k].setYs) this.entities[i][k].setYs(null, null);
+                        if (this.entities[i][k].type == TYPE.MARIO) this.marioBuffer.push(this.entities[i][k]);
                     }
                     else {
                         if ((row[k + 1] && !!row[k + 1].match(/[\d]/g)) && (!rows[i + 1] || !rows[i + 1][k].match(/[\d]/g))) //multiply rows                            
@@ -233,6 +233,19 @@ fg.protoLevel = {
         this.loaded = true;
         this.height = this.entities.length * fg.System.defaultSide;
         this.width = this.entities[0].length * fg.System.defaultSide;
+        while (this.marioBuffer.length > 0) {
+            this.marioBuffer[this.marioBuffer.length - 1].setSubTiles();            
+            if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203" || this.marioBuffer[this.marioBuffer.length - 1].tileSet == "30313233") {
+                if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203")
+                    this.marioBuffer[this.marioBuffer.length - 1].cacheX = 0;
+                else
+                    this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.System.defaultSide * 3;
+            } else {
+                if (!fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet]) fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = (5 + Object.keys(fg.Render.marioCache).length) * fg.System.defaultSide;
+                this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
+            }
+            this.marioBuffer.pop();
+        }
     },
     init: function (name) {
         this.name = name;
@@ -641,6 +654,8 @@ fg.Wall = function (id, type, x, y, cx, cy, index) {
     wall.slope = false;
     wall.backGround = true;
     wall.foreGround = false;
+    wall.cacheWidth = wall.width;
+    wall.cacheHeight = wall.height;
     if (type == TYPE.BOUNCER) {
         wall = Object.assign(wall, fg.Bouncer);
     }
@@ -872,19 +887,19 @@ fg.Switch = {
         } else
             this.cacheX = 0
 
-        fg.protoEntity.draw.call(this,foreGround);
+        fg.protoEntity.draw.call(this, foreGround);
     }
 }
 
 fg.Mario = function (id, type, x, y, cx, cy, index) {
     return Object.assign(
         Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
-            cacheX: fg.System.defaultSide * 0,
+            cacheX: 0,//Math.round(Math.random() * 4) * fg.System.defaultSide,//cacheX: fg.System.defaultSide * 0,
             edges: undefined,
             tileSet: "",
             cachePosition: [{ x: 12, y: 0 }, { x: 12, y: 12 }, { x: 0, y: 12 }, { x: 0, y: 0 }],
             drawTile: function (c, ctx) {
-                c.width = this.width * 32;
+                c.width = this.width * (5 + Object.keys(fg.Render.marioCache).length);
                 c.height = this.height;
                 let colorA = "rgb(201,152,86)";
                 ctx.fillStyle = colorA;
@@ -901,32 +916,23 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.outerCorners(ctx);
                 //mirror sides
                 ctx.save();
-                ctx.translate(c.width - (fg.System.defaultSide*26), 0);
+                ctx.translate(c.width - (fg.System.defaultSide * ((5 + Object.keys(fg.Render.marioCache).length) - 6)), 0);
                 ctx.scale(-1, 1);
                 this.sides(ctx);
                 ctx.restore();
+
+                for (let i = 0, key; key = Object.keys(fg.Render.marioCache)[i]; i++) {
+                    //ctx.drawImage(this.renderSubTile(c, key), fg.Render.marioCache[key], 0);
+                    this.renderSubTile(ctx,key);
+                }
+
                 return c;
             },
             update: function () {
-                if (this.tileSet == "")
-                    this.setSubTiles();
+                if (this.tileSet == "") this.setSubTiles(true);
             },/*
             draw: function (foreGround) {
-                if (this.tileSet == "00010203" || this.tileSet == "30313233") {
-                    if (this.tileSet == "00010203") 
-                        this.cacheX = 0;
-                     else 
-                        this.cacheX = this.width * 3;
-                } else {                    
-                    // for(let i = 0; i <= 6; i += 2){
-                    //     this.cacheX = (parseInt(this.tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[this.tileSet[i + 1]].x);
-                    //     this.cacheY = parseInt(this.cachePosition[this.tileSet[i + 1]].y);
-                    //     this.cacheWidth = fg.System.defaultSide/2;
-                    //     this.cacheHeight = fg.System.defaultSide/2;
-                    //     fg.protoEntity.draw.call(this, foreGround, this.cachePosition[i/2]);
-                    // }
-                    // return;
-                }
+                if (this.tileSet == "") return;
                 fg.protoEntity.draw.call(this, foreGround);
             },*/
             setEdges: function () {
@@ -944,46 +950,42 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             },
             getSubTiles: function (tileA, tileB, tileC, index) {
                 if (tileA == 1 && tileB == 1 && tileC == 1)
-                    this.tileSet += "0" + index;
-                else if (tileA == 1 && tileB == 0 && tileC == 1)  
-                    this.tileSet += "2" + (2 + index) % 4;
-                else if (tileA == 1 && tileC == 0)  
-                    this.tileSet += "4" + index;           
-                else if (tileA == 0 && tileC == 1)  
-                    this.tileSet += "1" + index;                                 
+                    return "0" + index;
+                else if (tileA == 1 && tileB == 0 && tileC == 1)
+                    return "2" + (2 + index) % 4;
+                else if (tileA == 1 && tileC == 0)
+                    return "4" + index;
+                else if (tileA == 0 && tileC == 1)
+                    return "1" + index;
                 else
-                    this.tileSet += "3" + index;
+                    return "3" + index;
             },
-            setSubTiles: function () {
-                if (!fg.Render.cached[this.type]) return;
+            setSubTiles: function (setCacheX) {
                 this.setEdges();
                 this.tileSet = "";
                 for (let i = 0; i <= 6; i += 2)
-                    this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] === undefined ? this.edges[0] : this.edges[i + 2]), i / 2);
-
-                if (this.tileSet == "00010203" || this.tileSet == "30313233") {
-                    if (this.tileSet == "00010203")
-                        this.cacheX = 0;
-                    else
-                        this.cacheX = this.width * 3;
-                    return;
+                    this.tileSet += this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] === undefined ? this.edges[0] : this.edges[i + 2]), i / 2);
+                if (setCacheX)
+                    this.cacheX = fg.Render.marioCache[this.tileSet];
+            },
+            renderSubTile: function (ctx,key) {
+                // fg.Render.offScreenRender().width = fg.System.defaultSide;
+                // for (let i = 0; i <= 6; i += 2) {
+                //     let cacheX = (parseInt(tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[tileSet[i + 1]].x);
+                //     let cacheY = parseInt(this.cachePosition[tileSet[i + 1]].y);
+                //     let cacheWidth = fg.System.defaultSide / 2;
+                //     let cacheHeight = fg.System.defaultSide / 2;
+                //     fg.Render.drawOffScreen(c, cacheX, cacheY, cacheWidth, cacheHeight, this.cachePosition[i / 2].x, this.cachePosition[i / 2].y);
+                // }
+                // return fg.Render.offScreenRender();
+                let posX = fg.Render.marioCache[key];
+                for (let i = 0; i <= 6; i += 2) {
+                    let cacheX = (parseInt(key[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[key[i + 1]].x);
+                    let cacheY = parseInt(this.cachePosition[key[i + 1]].y);
+                    let cacheWidth = fg.System.defaultSide / 2;
+                    let cacheHeight = fg.System.defaultSide / 2;
+                    ctx.drawImage(ctx.canvas, cacheX, cacheY, cacheWidth, cacheHeight, posX + this.cachePosition[i / 2].x, this.cachePosition[i / 2].y, 12, 12);
                 }
-                
-                if (!fg.Render.marioCache[this.tileSet]) {
-                    for (let i = 0; i <= 6; i += 2) {
-                        this.cacheX = (parseInt(this.tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[this.tileSet[i + 1]].x);
-                        this.cacheY = parseInt(this.cachePosition[this.tileSet[i + 1]].y);
-                        this.cacheWidth = fg.System.defaultSide / 2;
-                        this.cacheHeight = fg.System.defaultSide / 2;
-                        fg.Render.drawOffScreen(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.cachePosition[i/2].x, this.cachePosition[i/2].y);
-                    }
-                    this.cacheY = 0;
-                    this.cacheWidth = fg.System.defaultSide;
-                    this.cacheHeight = fg.System.defaultSide;
-                    fg.Render.marioCache[this.tileSet] = (5 + Object.keys(fg.Render.marioCache).length) * fg.System.defaultSide;
-                    fg.Render.drawToCache(fg.Render.offScreenRender(), fg.Render.marioCache[this.tileSet], 0, this.type);
-                }
-                this.cacheX = fg.Render.marioCache[this.tileSet];
             },
             drawColor: function (ctx, t_x, t_y, t_w, t_h, color) {
                 ctx.fillStyle = color;
@@ -992,86 +994,86 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             },
             sides: function (ctx) {
                 let colorOne = "rgb(120,105,24)";//DarkBrown
-                let t_x = [24,29,30,31,36,40,41,41],
-                    t_y = [17, 0, 7,16, 6,12, 5,17],
-                    t_w = [ 7, 2, 2, 5, 5, 2, 7, 2],
-                    t_h = [ 2, 7, 5, 2, 2, 5, 2, 7];
+                let t_x = [24, 29, 30, 31, 36, 40, 41, 41],
+                    t_y = [17, 0, 7, 16, 6, 12, 5, 17],
+                    t_w = [7, 2, 2, 5, 5, 2, 7, 2],
+                    t_h = [2, 7, 5, 2, 2, 5, 2, 7];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
                 let colorTwo = "rgb(0,201,1)";//LightGreen
-                    t_x = [24,25,36,43];
-                    t_y = [19, 0, 1,12];
-                    t_w = [12, 4,12, 4];
-                    t_h = [ 4,12, 4,12];
+                t_x = [24, 25, 36, 43];
+                t_y = [19, 0, 1, 12];
+                t_w = [12, 4, 12, 4];
+                t_h = [4, 12, 4, 12];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
                 let colorThree = "rgb(0,120,72)";//DarkGreen
-                    t_x = [24,27,27,28,28,28,29,30,32,35,36,37,40,42,42,43,43,43,44,45];
-                    t_y = [19, 3,20, 0, 6,11, 8,19,18,19, 4, 5, 4, 3,13,12,16,21,18, 4];
-                    t_w = [ 3, 1, 3, 1, 1, 1, 1, 2, 3, 1, 1, 3, 2, 3, 1, 1, 1, 1, 1, 3];
-                    t_h = [ 1, 3, 1, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 2, 3, 3, 1];
-                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);      
+                t_x = [24, 27, 27, 28, 28, 28, 29, 30, 32, 35, 36, 37, 40, 42, 42, 43, 43, 43, 44, 45];
+                t_y = [19, 3, 20, 0, 6, 11, 8, 19, 18, 19, 4, 5, 4, 3, 13, 12, 16, 21, 18, 4];
+                t_w = [3, 1, 3, 1, 1, 1, 1, 2, 3, 1, 1, 3, 2, 3, 1, 1, 1, 1, 1, 3];
+                t_h = [1, 3, 1, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 2, 3, 3, 1];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);
                 let colorFour = "rgb(0,0,0)";//Black
-                    t_x = [24,24,24,27,28,29,29,29,30,30,32,35,36,36,37,40,41,42,42,42,42,43,45,47];
-                    t_y = [ 0,18,23,19, 3, 0, 6,11, 8,18,17,18, 0, 5, 6, 5,13, 4,12,16,21,18, 5,12];
-                    t_w = [ 1, 3,12, 3, 1, 1, 1, 1, 1, 2, 3, 1,12, 1, 3, 2, 1, 3, 1, 1, 1, 1, 3, 1];
-                    t_h = [12, 1, 1, 1, 3, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 2, 3, 3, 1,12];
-                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);                             
+                t_x = [24, 24, 24, 27, 28, 29, 29, 29, 30, 30, 32, 35, 36, 36, 37, 40, 41, 42, 42, 42, 42, 43, 45, 47];
+                t_y = [0, 18, 23, 19, 3, 0, 6, 11, 8, 18, 17, 18, 0, 5, 6, 5, 13, 4, 12, 16, 21, 18, 5, 12];
+                t_w = [1, 3, 12, 3, 1, 1, 1, 1, 1, 2, 3, 1, 12, 1, 3, 2, 1, 3, 1, 1, 1, 1, 3, 1];
+                t_h = [12, 1, 1, 1, 3, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 2, 3, 3, 1, 12];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);
             },
-            innerCorners: function(ctx){
+            innerCorners: function (ctx) {
                 let colorOne = "rgb(120,105,24)";//DarkBrown
-                let t_x = [54,55,53,58,59,66,],
-                    t_y = [ 7, 6,10,18, 5,11,],
-                    t_w = [12,10, 1, 3, 3, 1,],
-                    t_h = [10,12, 3, 1, 1, 3,];
+                let t_x = [54, 55, 53, 58, 59, 66,],
+                    t_y = [7, 6, 10, 18, 5, 11,],
+                    t_w = [12, 10, 1, 3, 3, 1,],
+                    t_h = [10, 12, 3, 1, 1, 3,];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
                 let colorTwo = "rgb(0,201,1)";//LightGreen
-                    t_x = [56];
-                    t_y = [ 8];
-                    t_w = [ 8];
-                    t_h = [ 8];
+                t_x = [56];
+                t_y = [8];
+                t_w = [8];
+                t_h = [8];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
                 let colorThree = "rgb(0,120,72)";//DarkGreen
-                    t_x = [55,56,56,57,57,59,59,61,61,63,63,64];
-                    t_y = [11, 8,13, 8,15, 7,16, 8,15, 8,13,11];
-                    t_w = [ 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1];
-                    t_h = [ 2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
-                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);      
+                t_x = [55, 56, 56, 57, 57, 59, 59, 61, 61, 63, 63, 64];
+                t_y = [11, 8, 13, 8, 15, 7, 16, 8, 15, 8, 13, 11];
+                t_w = [1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1];
+                t_h = [2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);
                 let colorFour = "rgb(0,0,0)";//Black
-                    t_x = [54,55,55,56,56,59,59,61,61,64,64,65];
-                    t_y = [11, 8,13, 7,16, 6,17, 7,16, 8,13,11];
-                    t_w = [ 1, 1, 1, 3, 3, 2, 2, 3, 3, 1, 1, 1];
-                    t_h = [ 2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
-                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);     
+                t_x = [54, 55, 55, 56, 56, 59, 59, 61, 61, 64, 64, 65];
+                t_y = [11, 8, 13, 7, 16, 6, 17, 7, 16, 8, 13, 11];
+                t_w = [1, 1, 1, 3, 3, 2, 2, 3, 3, 1, 1, 1];
+                t_h = [2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);
             },
             outerCorners: function (ctx) {
                 let colorOne = "rgb(120,105,24)";//DarkBrown
-                let t_x = [77,77,79,83,88,89,85,79,79,84,88,82],
-                    t_y = [ 5,11,16,17,13, 7, 5, 5,12,16,10, 7],
-                    t_w = [ 3, 2, 4, 6, 3, 2, 4, 6, 1, 2, 1, 2],
-                    t_h = [ 6, 6, 3, 2, 4, 6, 3, 2, 2, 1, 2, 1];
+                let t_x = [77, 77, 79, 83, 88, 89, 85, 79, 79, 84, 88, 82],
+                    t_y = [5, 11, 16, 17, 13, 7, 5, 5, 12, 16, 10, 7],
+                    t_w = [3, 2, 4, 6, 3, 2, 4, 6, 1, 2, 1, 2],
+                    t_h = [6, 6, 3, 2, 4, 6, 3, 2, 2, 1, 2, 1];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
                 let colorTwo = "rgb(0,0,0)";//Black
-                    t_x = [72,73,74,74,76,76,89,89,91,91,77,77,80,82,84,86,90,90];
-                    t_y = [ 4, 2, 1,17, 0,19, 1,17, 2, 4, 8,12,18, 5,18, 5,10,14];
-                    t_w = [ 5, 4, 5, 5,16,16, 5, 5, 4, 5, 1, 1, 2, 2, 2, 2, 1, 1];
-                    t_h = [16,20, 6, 6, 5, 5, 6, 6,20,16, 2, 2, 1, 1, 1, 1, 2, 2];
+                t_x = [72, 73, 74, 74, 76, 76, 89, 89, 91, 91, 77, 77, 80, 82, 84, 86, 90, 90];
+                t_y = [4, 2, 1, 17, 0, 19, 1, 17, 2, 4, 8, 12, 18, 5, 18, 5, 10, 14];
+                t_w = [5, 4, 5, 5, 16, 16, 5, 5, 4, 5, 1, 1, 2, 2, 2, 2, 1, 1];
+                t_h = [16, 20, 6, 6, 5, 5, 6, 6, 20, 16, 2, 2, 1, 1, 1, 1, 2, 2];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
                 let colorThree = "rgb(0,120,72)";//DarkGreen
-                    t_x = [76,75,76,78,78,90,90,92,76,76,80,82,84,86,91,91];
-                    t_y = [ 4, 6,18,20, 3, 4,18, 6, 8,12,19, 4,19, 4,10,14];
-                    t_w = [ 2, 1, 2,12,12, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1];
-                    t_h = [ 2,12, 2, 1, 1, 2, 2,12, 2, 2, 1, 1, 1, 1, 2, 2];
-                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);      
+                t_x = [76, 75, 76, 78, 78, 90, 90, 92, 76, 76, 80, 82, 84, 86, 91, 91];
+                t_y = [4, 6, 18, 20, 3, 4, 18, 6, 8, 12, 19, 4, 19, 4, 10, 14];
+                t_w = [2, 1, 2, 12, 12, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1];
+                t_h = [2, 12, 2, 1, 1, 2, 2, 12, 2, 2, 1, 1, 1, 1, 2, 2];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);
                 let colorFour = "rgb(0,201,1)";//LightGreen
-                    t_x = [74,73,74,76,91,93,91,76,75,75,75,75,77,80,84,90,92,92,92,92,90,86,82,77];
-                    t_y = [ 2, 4,19,21,19, 4, 2, 1, 5, 8,12,18,20,20,20,20,18,14,10, 5, 3, 3, 3, 3];
-                    t_w = [ 3, 2, 3,16, 3, 2, 3,16, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1];
-                    t_h = [ 3,16, 3, 2, 3,16, 3, 2, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1];
-                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);                             
+                t_x = [74, 73, 74, 76, 91, 93, 91, 76, 75, 75, 75, 75, 77, 80, 84, 90, 92, 92, 92, 92, 90, 86, 82, 77];
+                t_y = [2, 4, 19, 21, 19, 4, 2, 1, 5, 8, 12, 18, 20, 20, 20, 20, 18, 14, 10, 5, 3, 3, 3, 3];
+                t_w = [3, 2, 3, 16, 3, 2, 3, 16, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1];
+                t_h = [3, 16, 3, 2, 3, 16, 3, 2, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1];
+                this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);
             },
             speckles: function (ctx) {
                 let colorB = "rgba(224,190,80,1)";
-                let t_x = [3, 6, 8, 8,13,15,15,16,18,20],
-                    t_y = [8,11, 5,17,14, 2,20, 8,14, 4],
+                let t_x = [3, 6, 8, 8, 13, 15, 15, 16, 18, 20],
+                    t_y = [8, 11, 5, 17, 14, 2, 20, 8, 14, 4],
                     t_w = [1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
                     t_h = [3, 3, 3, 3, 2, 3, 2, 3, 3, 2];
                 ctx.fillStyle = colorB;
@@ -1572,7 +1574,7 @@ fg.Render = {
     drawOffScreen: function (data, cacheX, cacheY, width, height, mapX, mapY) {
         this.offScreenRender().getContext('2d').drawImage(data, cacheX, cacheY, width, height, mapX, mapY, width, height);
     },
-    drawToCache: function(data, x, y, type) {
+    drawToCache: function (data, x, y, type) {
         this.cached[type].getContext('2d').drawImage(data, x, y);
     },
     preRenderCanvas: function () { return fg.$new("canvas"); },
