@@ -178,9 +178,7 @@ fg.protoLevel = {
                 if (!col.match(/[ #\d]/g)) {
                     let cx = 0, cy = 0, idx = 0;
                     if ((!row[k + 1] || !row[k + 1].match(/[\d]/g)) && (!rows[i + 1] || !rows[i + 1][k].match(/[\d]/g))) {
-                        this.entities[i][k] = fg.Entity(i + "-" + k, col, fg.System.defaultSide * k, fg.System.defaultSide * i, 0, 0, 0);
-                        if (this.entities[i][k].setYs) this.entities[i][k].setYs(null, null);
-                        if (this.entities[i][k].type == TYPE.MARIO) this.marioBuffer.push(this.entities[i][k]);
+                        this.addEntity(row, col, i, k, cx, cy, idx);
                     }
                     else {
                         if ((row[k + 1] && !!row[k + 1].match(/[\d]/g)) && (!rows[i + 1] || !rows[i + 1][k].match(/[\d]/g))) //multiply rows                            
@@ -234,7 +232,7 @@ fg.protoLevel = {
         this.height = this.entities.length * fg.System.defaultSide;
         this.width = this.entities[0].length * fg.System.defaultSide;
         while (this.marioBuffer.length > 0) {
-            this.marioBuffer[this.marioBuffer.length - 1].setSubTiles();            
+            this.marioBuffer[this.marioBuffer.length - 1].setSubTiles();
             if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203" || this.marioBuffer[this.marioBuffer.length - 1].tileSet == "30313233") {
                 if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203")
                     this.marioBuffer[this.marioBuffer.length - 1].cacheX = 0;
@@ -250,6 +248,11 @@ fg.protoLevel = {
     init: function (name) {
         this.name = name;
         this.load();
+    },
+    addEntity: function (row, col, i, k, cx, cy, idx) {
+        this.entities[i][k] = fg.Entity(i + "-" + k, col, fg.System.defaultSide * k, fg.System.defaultSide * i, 0, 0, 0);
+        if (this.entities[i][k].setYs) this.entities[i][k].setYs(null, null);
+        if (this.entities[i][k].type == TYPE.MARIO) this.marioBuffer.push(this.entities[i][k]);
     },
     addEntityColumn: function (row, col, i, k, cx, cy, idx) {//row-column
         for (let index = 0; index <= row[k + 1]; index++) {
@@ -328,7 +331,7 @@ fg.protoEntity = {
         this.cacheX = cx;
         this.cacheY = cy;
         this.index = index;
-        this.collidable = this.type != TYPE.TUNNEL && this.type != TYPE.DARKNESS;
+        this.collidable = this.type != TYPE.TUNNEL && this.type != TYPE.DARKNESS && this.type != TYPE.SAVE;
         this.segments = [];
         this.backGround = true;
         return this;
@@ -417,6 +420,7 @@ fg.Active =
             if (this.entitiesToResolveX.length > 0) {
                 this.resolveCollisions(this.entitiesToResolveX, this.entitiesToResolveY);
             } else {
+                this.addedSpeedX = 0;
                 this.x = this.nextPosition.x;
                 this.y = this.nextPosition.y;
                 if (this.canJump && this.y - this.lastPosition.y > 1)
@@ -509,6 +513,7 @@ fg.Active =
         },
         resolveNonOneWayYCollision: function (obj) {
             if (Math.abs(this.speedY) <= fg.Game.gravity) return;
+            this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
             if (obj.interactive) obj.interact(this);
             if (this.y <= obj.y)
                 this.y = obj.y - this.height;
@@ -542,7 +547,6 @@ fg.Active =
                 if (obj.interactive) obj.interact(this);
                 this.grounded = true;
             }
-            this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
             let intersection = this.getIntersection(obj);
             if (intersection.height <= intersection.width) {
                 if (!obj.oneWay) {
@@ -550,6 +554,7 @@ fg.Active =
                 } else {
                     if (obj.interactive) obj.interact(this);
                     if (this.lastPosition.y + this.height <= obj.y && this.y + this.height > obj.y) {
+                        this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
                         this.y = obj.y - this.height;
                         this.speedY = this.speedY * -1;
                         this.speedY = this.speedY * this.bounceness;
@@ -600,6 +605,8 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
             return fg.Circle(id, type, x, y, cx, cy, index);
         case TYPE.MARIO:
             return fg.Mario(id, type, x, y, cx, cy, index);
+        case TYPE.SAVE:
+            return fg.Save(id, type, x, y, cx, cy, index);
         default:
             return Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index);
     }
@@ -759,6 +766,7 @@ fg.ChangeTarget = {
     },
     moveRight: function () {
         if (!this.target.defaultX) this.target.defaultX = this.target.x;
+        this.target.addedSpeedX = 0;
         if (this.on) {
             if (this.target.x < this.target.defaultX + (fg.System.defaultSide * this.distance)) {
                 this.target.x += this.speed * fg.Timer.deltaTime;//0.2;//0.1;
@@ -923,7 +931,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
 
                 for (let i = 0, key; key = Object.keys(fg.Render.marioCache)[i]; i++) {
                     //ctx.drawImage(this.renderSubTile(c, key), fg.Render.marioCache[key], 0);
-                    this.renderSubTile(ctx,key);
+                    this.renderSubTile(ctx, key);
                 }
 
                 return c;
@@ -968,7 +976,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 if (setCacheX)
                     this.cacheX = fg.Render.marioCache[this.tileSet];
             },
-            renderSubTile: function (ctx,key) {
+            renderSubTile: function (ctx, key) {
                 // fg.Render.offScreenRender().width = fg.System.defaultSide;
                 // for (let i = 0; i <= 6; i += 2) {
                 //     let cacheX = (parseInt(tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[tileSet[i + 1]].x);
@@ -1238,6 +1246,54 @@ fg.Grower = {
     }
 }
 
+fg.Save = function (id, type, x, y, cx, cy, index) {
+    return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+        drawTile: function (c, ctx) {
+            let imageData = null;
+            let data = null;
+
+            for (var index = 0; index <= 5; index++) {
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, this.width, this.height);
+                ctx.fillStyle = "#995006";
+                ctx.fillRect(1, 1, this.width - 2, this.height - 2);
+                ctx.fillStyle = "#565656";
+                ctx.fillRect(1, 18, 22, 5);
+                ctx.fillStyle = "#060D99";
+                ctx.fillRect(2, 20, 4, 1);
+                ctx.fillRect(3, 19, 2, 3);
+                ctx.fillRect(18, 20, 4, 1);
+                ctx.fillRect(19, 19, 2, 3);
+                ctx.fillStyle = "white";
+                ctx.fillRect(2, 2, 20, 15);
+                /*imageData = ctx.getImageData(2, 2, 20, 15);
+                data = imageData.data;
+
+                for (var i = 0; i < data.length; i += 4) {
+                    if (Math.round(Math.random()))
+                        continue;
+
+                    data[i] = 0;     // red
+                    data[i + 1] = 0; // green
+                    data[i + 2] = 0; // blue
+                }
+                ctx.putImageData(imageData, 2, 2);
+                if (!preRenderedTiles[obj.type])
+                    preRenderedTiles[obj.type] = [];
+
+                preRenderedTiles[obj.type][index] = renderer;
+
+                renderer = document.createElement('canvas');
+                renderer.width = obj.width;
+                renderer.height = obj.height;
+                ctx = renderer.getContext('2d');*/
+            }
+
+            return c;
+        }
+    });
+}
+
 fg.Slope = function (id, type, x, y, cx, cy, index) {
     let slope = Object.create(fg.protoEntity);
     slope.init(id, type, x, y, cx, cy, index);
@@ -1411,6 +1467,8 @@ fg.Game =
         loaded: 0,
         paused: false,
         lastPauseState: undefined,
+        started: false,
+        title: { fadeIn: false, blinkText: 0 },
         loadLevel: function (name) {
             this.levels.push(fg.Level(name));
             return this.levels[this.levels.length - 1];
@@ -1425,6 +1483,7 @@ fg.Game =
             fg.Input.bind(fg.Input.KEY.A, "left");
             fg.Input.bind(fg.Input.KEY.D, "right");
             fg.Input.bind(fg.Input.KEY.ESC, "esc");
+            fg.Input.bind(fg.Input.KEY.ENTER, "enter");
             if (fg.System.platform.mobile) {
                 fg.Input.bindTouch(fg.$("#btnMoveLeft"), "left");
                 fg.Input.bindTouch(fg.$("#btnMoveRight"), "right");
@@ -1443,8 +1502,15 @@ fg.Game =
                     //fg.Game.actors[1] = fg.Entity("c-c", TYPE.CIRCLE, fg.System.defaultSide * 6, fg.System.defaultSide * 168, 0, 0, 0);//12,19|181,54|6,167|17,12                    
                     //fg.Camera.follow(fg.Game.actors[1]);
                 }
-                fg.Game.update();
-            }
+                if (!fg.Game.started) {
+                    if (Object.keys(fg.Input.actions).length > 0) {
+                        fg.Input.actions = {};
+                        fg.Game.started = true;
+                    }
+                    fg.Game.showTitle();
+                } else fg.Game.update();
+                fg.Timer.update();
+            } else fg.Game.drawLoading(10, fg.System.canvas.height - 20, fg.System.canvas.width - 20, 20);
 
             requestAnimationFrame(fg.Game.run);
         },
@@ -1452,11 +1518,17 @@ fg.Game =
             fg.System.context.fillStyle = "rgb(55,55,72)";//"rgb(55,55,72)";// "deepSkyBlue";
             fg.System.context.fillRect(0, 0, fg.System.canvas.width, fg.System.canvas.height);
         },
-        drawProgress: function (x, y, width, height, pos) {
-            fg.System.context.fillStyle = "black";
-            fg.System.context.fillRect(x, y, width, height);
-            fg.System.context.fillStyle = "white";
-            fg.System.context.fillRect(x + 1, y + 1, (pos * width) - 2, height - 2);
+        drawLoading: function (x, y, width, height, pos) {
+            if (pos) {
+                fg.System.context.fillStyle = "black";
+                fg.System.context.fillRect(x, y, width, height);
+                fg.System.context.fillStyle = "white";
+                fg.System.context.fillRect(x + 1, y + 1, (pos * width) - 2, height - 2);
+            } else {
+                fg.System.context.font = "15px Arial";
+                fg.System.context.fillStyle = "black";
+                fg.System.context.fillText("Loading...", x, y);
+            }
         },
         update: function () {
             if (fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) {
@@ -1474,7 +1546,6 @@ fg.Game =
                     this.updateEntity(entity);
                 for (let index = 0, entity; entity = this.foreGroundEntities[index]; index++)
                     entity.draw(true);
-                fg.Timer.update();
                 fg.Camera.update();
             } else {
 
@@ -1525,6 +1596,100 @@ fg.Game =
                 return true;
             }
             return false;
+        },
+        showTitle: function () {
+            let ctx = fg.System.context;
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, fg.System.canvas.width, fg.System.canvas.height);
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            var tittleXOffSet = 10;
+            var tittleYOffSet = 60;
+            ctx.strokeStyle = 'white';
+
+            //F
+            ctx.moveTo(20 + tittleXOffSet, 20 + tittleYOffSet);
+            ctx.lineTo(53 + tittleXOffSet, 17 + tittleYOffSet);
+            ctx.lineTo(54 + tittleXOffSet, 29 + tittleYOffSet);
+            ctx.lineTo(32 + tittleXOffSet, 27 + tittleYOffSet);
+            ctx.lineTo(34 + tittleXOffSet, 42 + tittleYOffSet);
+            ctx.lineTo(48 + tittleXOffSet, 40 + tittleYOffSet);
+            ctx.lineTo(50 + tittleXOffSet, 54 + tittleYOffSet);
+            ctx.lineTo(31 + tittleXOffSet, 52 + tittleYOffSet);
+            ctx.lineTo(33 + tittleXOffSet, 69 + tittleYOffSet);
+            ctx.lineTo(19 + tittleXOffSet, 67 + tittleYOffSet);
+            ctx.lineTo(20 + tittleXOffSet, 20 + tittleYOffSet);
+
+            //a
+            ctx.moveTo(20 + 60, 20 + 70);
+            ctx.lineTo(52 + 60, 18 + 70);
+            ctx.lineTo(48 + 60, 57 + 70);
+            ctx.lineTo(22 + 60, 60 + 70);
+            ctx.lineTo(18 + 60, 43 + 70);
+            ctx.lineTo(42 + 60, 39 + 70);
+            ctx.lineTo(37 + 60, 29 + 70);
+            ctx.lineTo(19 + 60, 32 + 70);
+            ctx.lineTo(20 + 60, 20 + 70);
+
+            //l
+            ctx.moveTo(20 + 110, 20 + 70);
+            ctx.lineTo(32 + 110, 18 + 70);
+            ctx.lineTo(31 + 110, 57 + 70);
+            ctx.lineTo(18 + 110, 62 + 70);
+            ctx.lineTo(20 + 110, 20 + 70);
+
+            //l                     
+            ctx.moveTo(20 + 140, 20 + 70);
+            ctx.lineTo(32 + 140, 18 + 70);
+            ctx.lineTo(31 + 140, 57 + 70);
+            ctx.lineTo(18 + 140, 62 + 70);
+            ctx.lineTo(20 + 140, 20 + 70);
+
+            //i                     
+            ctx.moveTo(20 + 165, 20 + 90);
+            ctx.lineTo(32 + 165, 18 + 90);
+            ctx.lineTo(31 + 165, 42 + 90);
+            ctx.lineTo(18 + 165, 44 + 90);
+            ctx.lineTo(20 + 165, 20 + 90);
+
+            //n
+            ctx.moveTo(20 + 190, 20 + 82);
+            ctx.lineTo(49 + 190, 52 + 82);
+            ctx.lineTo(41 + 190, 49 + 82);
+            ctx.lineTo(28 + 190, 42 + 82);
+            ctx.lineTo(31 + 190, 51 + 82);
+            ctx.lineTo(19 + 190, 49 + 82);
+            ctx.lineTo(20 + 190, 20 + 82);
+
+            //g
+            ctx.moveTo(20 + 230, 20 + 90);
+            ctx.lineTo(51 + 230, 19 + 90);
+            ctx.lineTo(48 + 230, 59 + 90);
+            ctx.lineTo(18 + 230, 61 + 90);
+            ctx.lineTo(21 + 230, 52 + 90);
+            ctx.lineTo(39 + 230, 50 + 90);
+            ctx.lineTo(41 + 230, 41 + 90);
+            ctx.lineTo(19 + 230, 38 + 90);
+            ctx.lineTo(20 + 230, 20 + 90);
+
+            ctx.stroke();
+            if (fg.Game.title.fadeIn)
+                fg.Game.title.blinkText += 1;
+            else
+                fg.Game.title.blinkText -= 1;
+
+            if (fg.Game.title.blinkText >= 100) fg.Game.title.fadeIn = false;
+
+            if (fg.Game.title.blinkText <= 0) fg.Game.title.fadeIn = true;
+
+            ctx.font = "10px Arial";
+            ctx.fillStyle = "rgba(255,255,255," + fg.Game.title.blinkText / 100 + ")";
+            ctx.fillText("Press any key...", 120, 180);
+
+            /*if (tracks[0].paused) {
+                tracks[0].play();
+            }*/
         },
         drawBackGround: function () {
             let bgSize = 4;
