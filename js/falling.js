@@ -607,6 +607,8 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
             return fg.Mario(id, type, x, y, cx, cy, index);
         case TYPE.SAVE:
             return fg.Save(id, type, x, y, cx, cy, index);
+        case TYPE.SENTRY:
+            return fg.Sentry(id, type, x, y, cx, cy, index);
         default:
             return Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index);
     }
@@ -1248,51 +1250,138 @@ fg.Grower = {
 
 fg.Save = function (id, type, x, y, cx, cy, index) {
     return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+        animationIndex: 0,
         drawTile: function (c, ctx) {
             let imageData = null;
             let data = null;
-
+            c.width = this.width*6;
+            c.height = this.height;
             for (var index = 0; index <= 5; index++) {
+                let offSetX = this.width * index;
                 ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, this.width, this.height);
+                ctx.fillRect(offSetX + 0, 0, this.width, this.height);
                 ctx.fillStyle = "#995006";
-                ctx.fillRect(1, 1, this.width - 2, this.height - 2);
+                ctx.fillRect(offSetX + 1, 1, this.width - 2, this.height - 2);
                 ctx.fillStyle = "#565656";
-                ctx.fillRect(1, 18, 22, 5);
+                ctx.fillRect(offSetX + 1, 18, 22, 5);
                 ctx.fillStyle = "#060D99";
-                ctx.fillRect(2, 20, 4, 1);
-                ctx.fillRect(3, 19, 2, 3);
-                ctx.fillRect(18, 20, 4, 1);
-                ctx.fillRect(19, 19, 2, 3);
+                ctx.fillRect(offSetX + 2, 20, 4, 1);
+                ctx.fillRect(offSetX + 3, 19, 2, 3);
+                ctx.fillRect(offSetX + 18, 20, 4, 1);
+                ctx.fillRect(offSetX + 19, 19, 2, 3);
                 ctx.fillStyle = "white";
-                ctx.fillRect(2, 2, 20, 15);
-                /*imageData = ctx.getImageData(2, 2, 20, 15);
+                ctx.fillRect(offSetX + 2, 2, 20, 15);
+                imageData = ctx.getImageData(offSetX + 2, 2, 20, 15);
                 data = imageData.data;
-
                 for (var i = 0; i < data.length; i += 4) {
-                    if (Math.round(Math.random()))
-                        continue;
-
+                    if (Math.round(Math.random())) continue;
                     data[i] = 0;     // red
                     data[i + 1] = 0; // green
                     data[i + 2] = 0; // blue
                 }
-                ctx.putImageData(imageData, 2, 2);
-                if (!preRenderedTiles[obj.type])
-                    preRenderedTiles[obj.type] = [];
-
-                preRenderedTiles[obj.type][index] = renderer;
-
-                renderer = document.createElement('canvas');
-                renderer.width = obj.width;
-                renderer.height = obj.height;
-                ctx = renderer.getContext('2d');*/
+                ctx.putImageData(imageData, offSetX + 2, 2);
             }
 
             return c;
+        },
+        update: function () {
+            this.cacheX = this.animationIndex * this.width;
+            this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
         }
     });
 }
+
+fg.Sentry = function (id, type, x, y, cx, cy, index) {
+    return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+        attached: false,
+        rotation: 0,
+        speedX: 0,
+        speedY: 0,
+        segments: [],
+        width: fg.System.defaultSide / 2,
+        height: fg.System.defaultSide / 2,
+        searchDepth:2,
+        drawTile: function (c, ctx) {
+            c.width = this.width;
+            c.height = this.height;
+            ctx.fillStyle = "#54A6BF";
+            ctx.arc(this.width / 2, this.height / 2, this.height / 2, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = "#407B95";
+            ctx.stroke();
+            return c;
+        },
+        checkCollisions: function () {
+            let ents = fg.Game.searchArea(this.x, this.y, this.searchDepth, this.searchDepth)
+            for (let i = 0, obj; obj = ents[i]; i++) {
+                if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
+                    if (this.speedX != 0) {
+                        if (this.speedX > 0)
+                            this.x = obj.x - this.width;
+                        else
+                            this.x = obj.x + obj.width;
+                    } else {
+                        if (this.speedY > 0)
+                            this.y = obj.y - this.height;
+                        else
+                            this.y = obj.y + obj.height;
+                    }
+                    this.y = Math.ceil(this.y);
+                    return false;
+                }
+            }
+            return true;
+        },
+        addSpeed: function () {
+            this.speedX = 0;
+            this.speedY = 0;
+            let vel = 0.03 * fg.Timer.deltaTime;
+            switch (this.rotation) {
+                case 0:
+                    this.speedX = vel;
+                    break;
+                case 90:
+                    this.speedY = vel;
+                    break;
+                case 180:
+                    this.speedX = -vel;
+                    break;
+                case 270:
+                    this.speedY = -vel;
+                    break;
+            }
+        },
+        update: function () {
+            if (this.attached) this.rotation -= 90;
+            if (this.rotation < 0) this.rotation = 360 + this.rotation;
+            this.attached = false;
+            var check = 0
+            while (check < 4) {
+                this.addSpeed();
+                this.segments = [];
+                if (this.checkCollisions()) {
+                    switch (this.rotation) {
+                        case 0:
+                        case 180:
+                            this.x += this.speedX
+                            break;
+                        case 90:
+                        case 270:
+                            this.y += this.speedY;
+                            break;
+                    }
+                    check = 4;
+                }
+                else {
+                    this.rotation += 90;
+                    this.rotation %= 360;
+                    this.attached = true;
+                }
+                check++;
+            }
+        }
+    });
+} 
 
 fg.Slope = function (id, type, x, y, cx, cy, index) {
     let slope = Object.create(fg.protoEntity);
@@ -1494,7 +1583,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 40, fg.System.defaultSide * 40, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 16, fg.System.defaultSide * 95, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
