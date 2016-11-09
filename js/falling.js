@@ -1294,13 +1294,19 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
 fg.Sentry = function (id, type, x, y, cx, cy, index) {
     return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
         attached: false,
+        moving: true,
         rotation: 0,
         speedX: 0,
         speedY: 0,
         segments: [],
         width: fg.System.defaultSide / 2,
         height: fg.System.defaultSide / 2,
-        searchDepth:2,
+        searchDepth: 8,
+        wait: 0,
+        aim: 0,
+        active: true,
+        curAngle: 0,
+        castAngle: 0,
         drawTile: function (c, ctx) {
             c.width = this.width;
             c.height = this.height;
@@ -1311,8 +1317,31 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             ctx.stroke();
             return c;
         },
+        getSegments: function(entities){
+            for(let i = 0, entity; entity = entities[i];i++){
+                if(entity.id == this.id) continue;
+                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
+                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
+            }
+        },
         checkCollisions: function () {
-            let ents = fg.Game.searchArea(this.x, this.y, this.searchDepth, this.searchDepth)
+            this.segments = [];
+            let ents = fg.Game.searchArea(this.x, this.y, this.searchDepth, Math.round(fg.System.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)))
+            this.getSegments(ents.concat(fg.Game.actors))
+            for (let k = 0; k < 6; k++) {
+                if(k == 0)
+                    this.rotation -= 90;
+                else
+                    this.rotation += 90;
+                if (this.rotation < 0) this.rotation = 360 + this.rotation;
+                if (this.rotation == 360) this.rotation = 0;
+                this.addSpeed();
+                if(!this.resolveCollision(ents)) if(this.attached) return;
+            }
+        },
+        resolveCollision: function (ents) {
             for (let i = 0, obj; obj = ents[i]; i++) {
                 if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
                     if (this.speedX != 0) {
@@ -1326,11 +1355,11 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                         else
                             this.y = obj.y + obj.height;
                     }
-                    this.y = Math.ceil(this.y);
-                    return false;
+                    this.attached = true;
+                    return true;
                 }
             }
-            return true;
+            return false;
         },
         addSpeed: function () {
             this.speedX = 0;
@@ -1351,34 +1380,186 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                     break;
             }
         },
-        update: function () {
-            if (this.attached) this.rotation -= 90;
-            if (this.rotation < 0) this.rotation = 360 + this.rotation;
-            this.attached = false;
-            var check = 0
-            while (check < 4) {
-                this.addSpeed();
-                this.segments = [];
-                if (this.checkCollisions()) {
-                    switch (this.rotation) {
-                        case 0:
-                        case 180:
-                            this.x += this.speedX
-                            break;
-                        case 90:
-                        case 270:
-                            this.y += this.speedY;
+        search: function () {
+            if (this.wait == 0) {
+                if (this.segments.length > 0 && this.active) this.moving = true;
+                if (this.aim < 150) {
+                    let segValue = 6;
+                    let searchAngle = 360 / segValue;
+                    for (let i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 6 : 1)) {                        
+                        this.castRay(i % 360);
+                        if (!this.moving)
                             break;
                     }
-                    check = 4;
-                }
-                else {
-                    this.rotation += 90;
-                    this.rotation %= 360;
-                    this.attached = true;
-                }
-                check++;
+                    if (this.aim <= 0) {
+                        if (this.castAngle < segValue) this.castAngle++;
+                        else {
+                            this.curAngle++;
+                            this.curAngle = this.curAngle % 360;
+                            this.castAngle = 0;
+                        }
+                        this.shootAngle = this.rotation;
+                    } else {
+                        var resultAngle = this.shootAngle - (searchAngle / 2);
+                        this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
+                    }
+                } else
+                    this.castRay(this.shootAngle);
+
+                if (this.moving) this.aim = 0;
+            } else {
+                this.CastRay(this.shootAngle);
+                this.wait--;
             }
+        },
+        castRay: function (angle) {
+            var endCastX = Math.cos(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
+            var endCastY = Math.sin(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
+            var ray = {
+                a: { x: this.x, y: this.y },
+                b: { x: this.x + endCastX, y: this.y + endCastY }
+            };
+            //this.drawLaser(ray.b);
+
+            // Find CLOSEST intersection
+            var closestIntersect = null;
+            for (var i = 0; i < this.segments.length; i++) {
+                var intersect = this.getIntersection(ray, this.segments[i]);
+                if (!intersect) continue;
+                if (!closestIntersect || intersect.param < closestIntersect.param) {
+                    closestIntersect = intersect;
+                }
+            }
+            var intersect = closestIntersect;
+
+            if (!intersect) return true;
+
+            if ((intersect.type == TYPE.ACTOR || this.aim >= 150 || this.wait > 0) && intersect.param <= 3.5) {
+                this.aiming(intersect);
+                this.moving = false;
+                this.shootAngle = angle;
+                return false;
+            }
+
+            return true;
+        },
+        aiming: function (intersect) {
+            let ctx = fg.System.context;
+            if (this.aim <= 150)
+                ctx.lineWidth = 1;
+            else
+                ctx.lineWidth = 2;
+
+            if (this.maxAim == this.aim || this.wait > 60) {
+                // Draw red laser
+                this.drawLaser(intersect);
+
+                if (this.wait == 0) this.wait = this.maxWait;
+
+                this.aim = 0;
+                if (intersect.type == TYPE.ACTOR) Actors[0].life = 0;
+
+                if (intersect.type == TYPE.MARIO) {
+                    var objX = parseInt(intersect.id.split("-")[0]);
+                    var objY = parseInt(intersect.id.split("-")[1]);
+                    if (this.wait <= 61) {
+                        fg.Game.currentLevel.entities[objX][objY].vanished = 20000;
+                        this.vanish(intersect);
+                        if (fg.Game.currentLevel.entities[objX][objY].ID == "17-86")
+                            camera.fixed = false;
+                    }
+                }
+            }
+        },
+        drawTargetCircle: function () {
+            ctx.fillStyle = "#dd3838";
+            ctx.beginPath();
+            ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, 1, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            if (this.maxAim != this.aim && this.wait == 0) {
+                ctx.beginPath();
+                ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, this.maxAim - this.aim, 0, 2 * Math.PI, false);
+                ctx.stroke();
+                this.aim++;
+            }
+        }, 
+        drawLaser: function (intersect) {
+            let ctx = fg.System.context;
+            // Draw red laser
+            ctx.save();
+            ctx.strokeStyle = "#dd3838";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(this.x - fb.Game.screenOffsetX, this.y - fb.Game.screenOffsetY);
+            ctx.lineTo(intersect.x - fb.Game.screenOffsetX, intersect.y - fb.Game.screenOffsetY);
+            ctx.stroke();
+            ctx.restore();
+        },
+        vanish: function (intersect) {
+            let entities = fg.Game.currentLevel.entities;
+            let tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
+            let tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
+
+            let objX = parseInt(tempX);
+            let objY = parseInt(tempY);
+
+            if (entities[objX - 1][objY + 0] && entities[objX - 1][objY + 0].type == TYPE.MARIO) entities[objX - 1][objY + 0].tileSet = "";
+            if (entities[objX - 1][objY + 1] && entities[objX - 1][objY + 1].type == TYPE.MARIO) entities[objX - 1][objY + 1].tileSet = "";
+            if (entities[objX - 0][objY + 1] && entities[objX - 0][objY + 1].type == TYPE.MARIO) entities[objX - 0][objY + 1].tileSet = "";
+            if (entities[objX + 1][objY + 1] && entities[objX + 1][objY + 1].type == TYPE.MARIO) entities[objX + 1][objY + 1].tileSet = "";
+            if (entities[objX + 1][objY + 0] && entities[objX + 1][objY + 0].type == TYPE.MARIO) entities[objX + 1][objY + 0].tileSet = "";
+            if (entities[objX + 1][objY - 1] && entities[objX + 1][objY - 1].type == TYPE.MARIO) entities[objX + 1][objY - 1].tileSet = "";
+            if (entities[objX - 0][objY - 1] && entities[objX - 0][objY - 1].type == TYPE.MARIO) entities[objX - 0][objY - 1].tileSet = "";
+            if (entities[objX - 1][objY - 1] && entities[objX - 1][objY - 1].type == TYPE.MARIO) entities[objX - 1][objY - 1].tileSet = "";
+        },
+        getIntersection: function getIntersection(ray, segment) {
+            var r_px = ray.a.x;
+            var r_py = ray.a.y;
+            var r_dx = ray.b.x - ray.a.x;
+            var r_dy = ray.b.y - ray.a.y;
+            
+            var s_px = segment.a.x;
+            var s_py = segment.a.y;
+            var s_dx = segment.b.x - segment.a.x;
+            var s_dy = segment.b.y - segment.a.y;
+
+            // Are they parallel? If so, no intersect
+            if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;
+
+            // SOLVE FOR T1 & T2
+            var T2 = (r_dx * (s_py - r_py) + r_dy * (r_px - s_px)) / (s_dx * r_dy - s_dy * r_dx);
+            var T1 = (s_px + s_dx * T2 - r_px) / r_dx;
+
+            if (isNaN(T1)) T1 = (s_py + s_dy * T2 - r_py) / r_dy;
+
+            // Must be within parametic whatevers for RAY/SEGMENT
+            if (T1 < 0) return null;
+            if (T2 < 0 || T2 > 1) return null;
+
+            // Return the POINT OF INTERSECTION
+            return {
+                x: r_px + r_dx * T1,
+                y: r_py + r_dy * T1,
+                param: T1,
+                type: segment.type,
+                id: segment.id
+            };
+        },
+        update: function () {
+            if (this.moving) {
+                this.checkCollisions();
+                switch (this.rotation) {
+                    case 0:
+                    case 180:
+                        this.x += this.speedX
+                        break;
+                    case 90:
+                    case 270:
+                        this.y += this.speedY;
+                        break;
+                }
+            } 
+            this.search();
         }
     });
 } 
