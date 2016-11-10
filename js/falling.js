@@ -7,8 +7,8 @@
             },
             $new: function (name) { return document.createElement(name); },
             loadScript: function (root, name, callBack, callBackParams) {
-                let path = root + name.replace(/\./g, '/') + '.js';
-                let script = fg.$new('script');
+                var path = root + name.replace(/\./g, '/') + '.js';
+                var script = fg.$new('script');
                 script.type = 'text/javascript';
                 script.src = path;
                 script.onload = function (event) {
@@ -28,11 +28,11 @@
                     throw new TypeError('Cannot convert undefined or null to object');
                 }
 
-                let output = Object(target);
-                for (let index = 1; index < arguments.length; index++) {
-                    let source = arguments[index];
+                var output = Object(target);
+                for (var index = 1; index < arguments.length; index++) {
+                    var source = arguments[index];
                     if (source !== undefined && source !== null) {
-                        for (let nextKey in source) {
+                        for (var nextKey in source) {
                             if (source.hasOwnProperty(nextKey)) {
                                 output[nextKey] = source[nextKey];
                             }
@@ -90,12 +90,12 @@ fg.System =
                 this.renderMobileInput();
         },
         renderMobileInput: function () {
-            let auxCanvas = document.createElement('canvas');
+            var auxCanvas = document.createElement('canvas');
             auxCanvas.width = 64;
             auxCanvas.height = 64;
-            let auxCanvasCtx = auxCanvas.getContext('2d');
+            var auxCanvasCtx = auxCanvas.getContext('2d');
 
-            let imgLeft = document.getElementById("btnMoveLeft");
+            var imgLeft = document.getElementById("btnMoveLeft");
             auxCanvasCtx.beginPath();
             auxCanvasCtx.fillStyle = "#aaaaaa";
             auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
@@ -106,7 +106,7 @@ fg.System =
             auxCanvasCtx.fill();
             imgLeft.src = auxCanvas.toDataURL("image/png");
 
-            let imgRight = document.getElementById("btnMoveRight");
+            var imgRight = document.getElementById("btnMoveRight");
             auxCanvasCtx.beginPath();
             auxCanvasCtx.fillStyle = "#aaaaaa";
             auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
@@ -117,7 +117,7 @@ fg.System =
             auxCanvasCtx.fill();
             imgRight.src = auxCanvas.toDataURL("image/png");
 
-            let imgJump = document.getElementById("btnJump");
+            var imgJump = document.getElementById("btnJump");
             auxCanvasCtx.beginPath();
             auxCanvasCtx.fillStyle = "#aaaaaa";
             auxCanvasCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
@@ -171,12 +171,12 @@ fg.protoLevel = {
             this.customProperties = window[this.name].customProperties;
     },
     createEntities: function () {
-        let rows = window[this.name].tiles.split('\n');
-        for (let i = 0, row; row = rows[i]; i++) {
+        var rows = window[this.name].tiles.split('\n');
+        for (var i = 0, row; row = rows[i]; i++) {
             if (!this.entities[i]) this.entities[i] = [];
-            for (let k = 0, col; col = row[k]; k++) {
+            for (var k = 0, col; col = row[k]; k++) {
                 if (!col.match(/[ #\d]/g)) {
-                    let cx = 0, cy = 0, idx = 0;
+                    var cx = 0, cy = 0, idx = 0;
                     if ((!row[k + 1] || !row[k + 1].match(/[\d]/g)) && (!rows[i + 1] || !rows[i + 1][k].match(/[\d]/g))) {
                         this.addEntity(row, col, i, k, cx, cy, idx);
                     }
@@ -194,7 +194,7 @@ fg.protoLevel = {
         this.loadLevelCompleted()
     },
     applySettingsToEntity: function (entity) {
-        let settings = undefined;
+        var settings = undefined;
         switch (entity.type) {
             case TYPE.PLATFORM:
                 settings = (this.movingPlatforms.find(function (e) { return e.id == entity.id }) || {}).settings;
@@ -209,7 +209,7 @@ fg.protoLevel = {
         if (settings) Object.assign(entity, settings);
     },
     applyFeaturesToEntity: function (entity) {
-        let features = undefined;
+        var features = undefined;
         switch (entity.type) {
             case TYPE.PLATFORM:
                 features = (this.movingPlatforms.find(function (e) { return e.id == entity.id }) || {}).features;
@@ -255,7 +255,7 @@ fg.protoLevel = {
         if (this.entities[i][k].type == TYPE.MARIO) this.marioBuffer.push(this.entities[i][k]);
     },
     addEntityColumn: function (row, col, i, k, cx, cy, idx) {//row-column
-        for (let index = 0; index <= row[k + 1]; index++) {
+        for (var index = 0; index <= row[k + 1]; index++) {
             cx = fg.System.defaultSide;
             if ("╝╚╗╔".indexOf(col) < 0) {
                 if (index == 0) idx = 1;
@@ -272,7 +272,7 @@ fg.protoLevel = {
         }
     },
     addEntityRow: function (rows, row, col, i, k, cx, cy, idx) {
-        for (let index = 0; index <= rows[i + 1][k]; index++) {
+        for (var index = 0; index <= rows[i + 1][k]; index++) {
             if (!this.entities[i + index])
                 this.entities[i + index] = [];
             cy = fg.System.defaultSide;
@@ -288,9 +288,9 @@ fg.protoLevel = {
         }
     },
     addEntityArea: function (rows, row, col, i, k, cx, cy, idx) {
-        let computedPos = null;
-        for (let kIndex = 0; kIndex <= row[k + 1]; kIndex++) {
-            for (let iIndex = 0; iIndex <= rows[i + 1][k]; iIndex++) {
+        var computedPos = null;
+        for (var kIndex = 0; kIndex <= row[k + 1]; kIndex++) {
+            for (var iIndex = 0; iIndex <= rows[i + 1][k]; iIndex++) {
                 if (!this.entities[i + iIndex]) this.entities[i + iIndex] = [];
                 if (iIndex == 0) {
                     if (kIndex == 0) computedPos = this.computeEntityAreaPos(5, 1, 1);
@@ -310,8 +310,8 @@ fg.protoLevel = {
         }
     },
     computeEntityAreaPos: function (idx, xMultiplyer, yMultiplyer) {
-        let cx = fg.System.defaultSide * xMultiplyer;
-        let cy = fg.System.defaultSide * yMultiplyer;
+        var cx = fg.System.defaultSide * xMultiplyer;
+        var cy = fg.System.defaultSide * yMultiplyer;
         return { idx: idx, cx: cx, cy: cy };
     }
 }
@@ -338,8 +338,8 @@ fg.protoEntity = {
     },
     draw: function (foreGround) {
         if (!fg.Render.cached[this.type]) {
-            let c = fg.Render.preRenderCanvas();
-            let ctx = c.getContext("2d");
+            var c = fg.Render.preRenderCanvas();
+            var ctx = c.getContext("2d");
             c = this.drawTile(c, ctx);
             if (c)
                 fg.Render.draw(fg.Render.cache(this.type, c), this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
@@ -383,10 +383,10 @@ fg.Active =
         backGround: true,
         update: function () {
             this.addGravity();
-            this.entitiesToTest = fg.Game.searchArea(this.x, this.y, this.searchDepth, this.searchDepth);
+            this.entitiesToTest = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, this.searchDepth);
             this.lastPosition = { x: this.x, y: this.y, grounded: this.grounded };
             this.speedX = this.getSpeedX();
-            for (let index = 0, entity; entity = fg.Game.actors[index]; index++)
+            for (var index = 0, entity; entity = fg.Game.actors[index]; index++)
                 this.entitiesToTest.push(entity);
             this.ignoreFriction = false;
             this.checkCollisions();
@@ -409,7 +409,7 @@ fg.Active =
             this.entitiesToResolveY = [];
             this.grounded = false;
             this.nextPosition = { x: this.x + ((this.speedX + this.addedSpeedX) * fg.Timer.deltaTime), y: this.y + this.speedY * fg.Timer.deltaTime, width: this.width, height: this.height, id: this.id };
-            for (let i = this.entitiesToTest.length - 1, obj; obj = this.entitiesToTest[i]; i--) {
+            for (var i = this.entitiesToTest.length - 1, obj; obj = this.entitiesToTest[i]; i--) {
                 if (fg.Game.testOverlap(this.nextPosition, obj)) {
                     this.entitiesToResolveX.push(obj);
                     this.entitiesToResolveY.push(obj);
@@ -430,17 +430,17 @@ fg.Active =
         resolveCollisions: function (entitiesToResolveX, entitiesToResolveY) {
             if (entitiesToResolveX.length > 1) entitiesToResolveX.sort(function (a, b) { return a.slope; });
             if (entitiesToResolveY.length > 1) entitiesToResolveY.sort(function (a, b) { return a.slope; });
-            let countx = 0, county = 0;
+            var countx = 0, county = 0;
             this.x += (this.speedX + this.addedSpeedX) * fg.Timer.deltaTime;
             while (entitiesToResolveX.length > 0) {
-                let obj = entitiesToResolveX[entitiesToResolveX.length - 1];
+                var obj = entitiesToResolveX[entitiesToResolveX.length - 1];
                 this.resolveForX(entitiesToResolveX, obj);
                 county++;
                 if (county > 4) break;
             }
             this.y += this.speedY * fg.Timer.deltaTime;
             while (entitiesToResolveY.length > 0) {
-                let obj = entitiesToResolveY[entitiesToResolveY.length - 1];
+                var obj = entitiesToResolveY[entitiesToResolveY.length - 1];
                 this.resolveForY(entitiesToResolveY, obj);
                 countx++;
                 if (countx > 4) break;
@@ -456,7 +456,7 @@ fg.Active =
             }
         },
         nonSlopeXcollision: function (obj) {
-            let intersection = this.getIntersection(obj);
+            var intersection = this.getIntersection(obj);
             if ((intersection.height >= intersection.width && intersection.height > 1)) {
                 if (this.x < obj.x)
                     this.x = obj.x - this.width;
@@ -501,8 +501,8 @@ fg.Active =
             }
         },
         slopeYcollision: function (obj) {
-            let t = (Math.round(this.x + (this.width / 2)) - obj.x) / (fg.System.defaultSide / (obj.rowSize || 1));
-            let hitY = (1 - t) * obj.leftY + t * obj.rightY;
+            var t = (Math.round(this.x + (this.width / 2)) - obj.x) / (fg.System.defaultSide / (obj.rowSize || 1));
+            var hitY = (1 - t) * obj.leftY + t * obj.rightY;
             if (this.y + this.height >= hitY) {
                 if (!fg.Input.actions["jump"])
                     this.canJump = true;
@@ -535,7 +535,7 @@ fg.Active =
         },
         computeAddedSpeedX: function (newAddedValue) {
             if (newAddedValue == 0) return newAddedValue;
-            let multiplyer = Math.min(Math.abs(this.addedSpeedX + this.speedX), Math.abs(newAddedValue)) / Math.max(Math.abs(this.addedSpeedX + this.speedX), Math.abs(newAddedValue));
+            var multiplyer = Math.min(Math.abs(this.addedSpeedX + this.speedX), Math.abs(newAddedValue)) / Math.max(Math.abs(this.addedSpeedX + this.speedX), Math.abs(newAddedValue));
             if (multiplyer == 0) multiplyer = 0.001;
             if (multiplyer < 0.9 && Math.abs(newAddedValue) > 0.06) return newAddedValue * multiplyer;
             return newAddedValue;
@@ -547,7 +547,7 @@ fg.Active =
                 if (obj.interactive) obj.interact(this);
                 this.grounded = true;
             }
-            let intersection = this.getIntersection(obj);
+            var intersection = this.getIntersection(obj);
             if (intersection.height <= intersection.width) {
                 if (!obj.oneWay) {
                     this.resolveNonOneWayYCollision(obj);
@@ -573,7 +573,7 @@ fg.Active =
             }
         },
         getIntersection: function (obj) {
-            let intersection = { x: Math.max(this.x, obj.x), y: Math.max(this.y, obj.y) };
+            var intersection = { x: Math.max(this.x, obj.x), y: Math.max(this.y, obj.y) };
             intersection.width = Math.round((Math.min(this.x + this.width, obj.x + obj.width) - intersection.x) * 1000) / 1000;
             intersection.height = Math.round((Math.min(this.y + this.height, obj.y + obj.height) - intersection.y) * 1000 / 1000);
             return intersection;
@@ -615,7 +615,7 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Circle = function (id, type, x, y, cx, cy, index) {
-    let circle = Object.create(fg.protoEntity);
+    var circle = Object.create(fg.protoEntity);
     circle = Object.assign(circle, fg.Active);
     circle.init(id, type, x, y, cx, cy, index);
     circle.soilFriction = 0.999;
@@ -653,7 +653,7 @@ fg.Bouncer = {
 }
 
 fg.Wall = function (id, type, x, y, cx, cy, index) {
-    let wall = Object.create(fg.protoEntity);
+    var wall = Object.create(fg.protoEntity);
     wall.init(id, type, x, y, cx, cy, index);
     fg.Game.currentLevel.applyFeaturesToEntity(wall);
     if (type == TYPE.GROWER)
@@ -671,12 +671,12 @@ fg.Wall = function (id, type, x, y, cx, cy, index) {
     wall.drawTile = function (c, ctx) {
         c.width = this.width * 4;
         c.height = this.height * (this.type == TYPE.PLATFORM ? 1 : 4);
-        for (let i = 0; i < (this.type == TYPE.PLATFORM ? 2 : 4); i++) {
+        for (var i = 0; i < (this.type == TYPE.PLATFORM ? 2 : 4); i++) {
 
-            let startX = (i == 1 || i == 3 ? this.width : 0);
-            let startY = (i == 2 || i == 3 ? this.width : 0);
-            let widthMultiplyer = (i == 1 || i == 3 ? 3 : 1);
-            let heightMultiplyer = (i == 2 || i == 3 ? 3 : 1);
+            var startX = (i == 1 || i == 3 ? this.width : 0);
+            var startY = (i == 2 || i == 3 ? this.width : 0);
+            var widthMultiplyer = (i == 1 || i == 3 ? 3 : 1);
+            var heightMultiplyer = (i == 2 || i == 3 ? 3 : 1);
 
             ctx.beginPath();
             ctx.lineWidth = 1;
@@ -843,10 +843,10 @@ fg.Switch = {
         fg.Interactive.update.call(this);
     },
     handleYSegments: function () {
-        let size = Math.ceil((this.target.defaultY + this.target.height - this.target.y) / this.target.height) - 1;
+        var size = Math.ceil((this.target.defaultY + this.target.height - this.target.y) / this.target.height) - 1;
         while (this.target.segments.length > size) this.target.segments.pop();
         if (size > 0) {
-            for (let i = 0; i < size; i++) {
+            for (var i = 0; i < size; i++) {
                 if (!this.target.segments[i]) {
                     this.target.segments[i] = Object.create(fg.protoEntity).init(i, this.target.type, this.target.x, this.target.defaultY - (i * this.target.height), 0, ((size == 1 ? 3 : 2) * this.target.height));
                     this.target.segments[i].foreGround = true;//Gambiarra =(
@@ -856,7 +856,7 @@ fg.Switch = {
         this.target.cacheY = this.target.segments.length > 0 ? this.height : 0;
     },
     drawSegments: function () {
-        for (let i = 0, segment; segment = this.segments[i]; i++)
+        for (var i = 0, segment; segment = this.segments[i]; i++)
             fg.Game.foreGroundEntities.push(segment);
     },
     interact: function (obj) {
@@ -911,7 +911,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             drawTile: function (c, ctx) {
                 c.width = this.width * (5 + Object.keys(fg.Render.marioCache).length);
                 c.height = this.height;
-                let colorA = "rgb(201,152,86)";
+                var colorA = "rgb(201,152,86)";
                 ctx.fillStyle = colorA;
                 ctx.fillRect(0, 0, 72, 24);
                 ctx.fillRect(79, 7, 10, 10);
@@ -931,7 +931,7 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.sides(ctx);
                 ctx.restore();
 
-                for (let i = 0, key; key = Object.keys(fg.Render.marioCache)[i]; i++) {
+                for (var i = 0, key; key = Object.keys(fg.Render.marioCache)[i]; i++) {
                     //ctx.drawImage(this.renderSubTile(c, key), fg.Render.marioCache[key], 0);
                     this.renderSubTile(ctx, key);
                 }
@@ -947,8 +947,8 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             },*/
             setEdges: function () {
                 this.edges = [];
-                let i = parseInt(this.id.split('-')[0]), k = parseInt(this.id.split('-')[1]);
-                let objs = fg.Game.currentLevel.entities;
+                var i = parseInt(this.id.split('-')[0]), k = parseInt(this.id.split('-')[1]);
+                var objs = fg.Game.currentLevel.entities;
                 this.edges.push(objs[i - 1][k + 0] && objs[i - 1][k + 0].type == TYPE.MARIO && !objs[i - 1][k + 0].vanished ? 1 : 0);
                 this.edges.push(objs[i - 1][k + 1] && objs[i - 1][k + 1].type == TYPE.MARIO && !objs[i - 1][k + 1].vanished ? 1 : 0);
                 this.edges.push(objs[i - 0][k + 1] && objs[i - 0][k + 1].type == TYPE.MARIO && !objs[i - 0][k + 1].vanished ? 1 : 0);
@@ -973,55 +973,55 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             setSubTiles: function (setCacheX) {
                 this.setEdges();
                 this.tileSet = "";
-                for (let i = 0; i <= 6; i += 2)
+                for (var i = 0; i <= 6; i += 2)
                     this.tileSet += this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] === undefined ? this.edges[0] : this.edges[i + 2]), i / 2);
                 if (setCacheX)
                     this.cacheX = fg.Render.marioCache[this.tileSet];
             },
             renderSubTile: function (ctx, key) {
                 // fg.Render.offScreenRender().width = fg.System.defaultSide;
-                // for (let i = 0; i <= 6; i += 2) {
-                //     let cacheX = (parseInt(tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[tileSet[i + 1]].x);
-                //     let cacheY = parseInt(this.cachePosition[tileSet[i + 1]].y);
-                //     let cacheWidth = fg.System.defaultSide / 2;
-                //     let cacheHeight = fg.System.defaultSide / 2;
+                // for (var i = 0; i <= 6; i += 2) {
+                //     var cacheX = (parseInt(tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[tileSet[i + 1]].x);
+                //     var cacheY = parseInt(this.cachePosition[tileSet[i + 1]].y);
+                //     var cacheWidth = fg.System.defaultSide / 2;
+                //     var cacheHeight = fg.System.defaultSide / 2;
                 //     fg.Render.drawOffScreen(c, cacheX, cacheY, cacheWidth, cacheHeight, this.cachePosition[i / 2].x, this.cachePosition[i / 2].y);
                 // }
                 // return fg.Render.offScreenRender();
-                let posX = fg.Render.marioCache[key];
-                for (let i = 0; i <= 6; i += 2) {
-                    let cacheX = (parseInt(key[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[key[i + 1]].x);
-                    let cacheY = parseInt(this.cachePosition[key[i + 1]].y);
-                    let cacheWidth = fg.System.defaultSide / 2;
-                    let cacheHeight = fg.System.defaultSide / 2;
+                var posX = fg.Render.marioCache[key];
+                for (var i = 0; i <= 6; i += 2) {
+                    var cacheX = (parseInt(key[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[key[i + 1]].x);
+                    var cacheY = parseInt(this.cachePosition[key[i + 1]].y);
+                    var cacheWidth = fg.System.defaultSide / 2;
+                    var cacheHeight = fg.System.defaultSide / 2;
                     ctx.drawImage(ctx.canvas, cacheX, cacheY, cacheWidth, cacheHeight, posX + this.cachePosition[i / 2].x, this.cachePosition[i / 2].y, 12, 12);
                 }
             },
             drawColor: function (ctx, t_x, t_y, t_w, t_h, color) {
                 ctx.fillStyle = color;
-                for (let index = 0; index < t_x.length; index++)
+                for (var index = 0; index < t_x.length; index++)
                     ctx.fillRect(t_x[index], t_y[index], t_w[index], t_h[index]);
             },
             sides: function (ctx) {
-                let colorOne = "rgb(120,105,24)";//DarkBrown
-                let t_x = [24, 29, 30, 31, 36, 40, 41, 41],
+                var colorOne = "rgb(120,105,24)";//DarkBrown
+                var t_x = [24, 29, 30, 31, 36, 40, 41, 41],
                     t_y = [17, 0, 7, 16, 6, 12, 5, 17],
                     t_w = [7, 2, 2, 5, 5, 2, 7, 2],
                     t_h = [2, 7, 5, 2, 2, 5, 2, 7];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
-                let colorTwo = "rgb(0,201,1)";//LightGreen
+                var colorTwo = "rgb(0,201,1)";//LightGreen
                 t_x = [24, 25, 36, 43];
                 t_y = [19, 0, 1, 12];
                 t_w = [12, 4, 12, 4];
                 t_h = [4, 12, 4, 12];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
-                let colorThree = "rgb(0,120,72)";//DarkGreen
+                var colorThree = "rgb(0,120,72)";//DarkGreen
                 t_x = [24, 27, 27, 28, 28, 28, 29, 30, 32, 35, 36, 37, 40, 42, 42, 43, 43, 43, 44, 45];
                 t_y = [19, 3, 20, 0, 6, 11, 8, 19, 18, 19, 4, 5, 4, 3, 13, 12, 16, 21, 18, 4];
                 t_w = [3, 1, 3, 1, 1, 1, 1, 2, 3, 1, 1, 3, 2, 3, 1, 1, 1, 1, 1, 3];
                 t_h = [1, 3, 1, 3, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 2, 3, 3, 1];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);
-                let colorFour = "rgb(0,0,0)";//Black
+                var colorFour = "rgb(0,0,0)";//Black
                 t_x = [24, 24, 24, 27, 28, 29, 29, 29, 30, 30, 32, 35, 36, 36, 37, 40, 41, 42, 42, 42, 42, 43, 45, 47];
                 t_y = [0, 18, 23, 19, 3, 0, 6, 11, 8, 18, 17, 18, 0, 5, 6, 5, 13, 4, 12, 16, 21, 18, 5, 12];
                 t_w = [1, 3, 12, 3, 1, 1, 1, 1, 1, 2, 3, 1, 12, 1, 3, 2, 1, 3, 1, 1, 1, 1, 3, 1];
@@ -1029,25 +1029,25 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);
             },
             innerCorners: function (ctx) {
-                let colorOne = "rgb(120,105,24)";//DarkBrown
-                let t_x = [54, 55, 53, 58, 59, 66,],
+                var colorOne = "rgb(120,105,24)";//DarkBrown
+                var t_x = [54, 55, 53, 58, 59, 66,],
                     t_y = [7, 6, 10, 18, 5, 11,],
                     t_w = [12, 10, 1, 3, 3, 1,],
                     t_h = [10, 12, 3, 1, 1, 3,];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
-                let colorTwo = "rgb(0,201,1)";//LightGreen
+                var colorTwo = "rgb(0,201,1)";//LightGreen
                 t_x = [56];
                 t_y = [8];
                 t_w = [8];
                 t_h = [8];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
-                let colorThree = "rgb(0,120,72)";//DarkGreen
+                var colorThree = "rgb(0,120,72)";//DarkGreen
                 t_x = [55, 56, 56, 57, 57, 59, 59, 61, 61, 63, 63, 64];
                 t_y = [11, 8, 13, 8, 15, 7, 16, 8, 15, 8, 13, 11];
                 t_w = [1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1];
                 t_h = [2, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 2];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);
-                let colorFour = "rgb(0,0,0)";//Black
+                var colorFour = "rgb(0,0,0)";//Black
                 t_x = [54, 55, 55, 56, 56, 59, 59, 61, 61, 64, 64, 65];
                 t_y = [11, 8, 13, 7, 16, 6, 17, 7, 16, 8, 13, 11];
                 t_w = [1, 1, 1, 3, 3, 2, 2, 3, 3, 1, 1, 1];
@@ -1055,25 +1055,25 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);
             },
             outerCorners: function (ctx) {
-                let colorOne = "rgb(120,105,24)";//DarkBrown
-                let t_x = [77, 77, 79, 83, 88, 89, 85, 79, 79, 84, 88, 82],
+                var colorOne = "rgb(120,105,24)";//DarkBrown
+                var t_x = [77, 77, 79, 83, 88, 89, 85, 79, 79, 84, 88, 82],
                     t_y = [5, 11, 16, 17, 13, 7, 5, 5, 12, 16, 10, 7],
                     t_w = [3, 2, 4, 6, 3, 2, 4, 6, 1, 2, 1, 2],
                     t_h = [6, 6, 3, 2, 4, 6, 3, 2, 2, 1, 2, 1];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorOne);
-                let colorTwo = "rgb(0,0,0)";//Black
+                var colorTwo = "rgb(0,0,0)";//Black
                 t_x = [72, 73, 74, 74, 76, 76, 89, 89, 91, 91, 77, 77, 80, 82, 84, 86, 90, 90];
                 t_y = [4, 2, 1, 17, 0, 19, 1, 17, 2, 4, 8, 12, 18, 5, 18, 5, 10, 14];
                 t_w = [5, 4, 5, 5, 16, 16, 5, 5, 4, 5, 1, 1, 2, 2, 2, 2, 1, 1];
                 t_h = [16, 20, 6, 6, 5, 5, 6, 6, 20, 16, 2, 2, 1, 1, 1, 1, 2, 2];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorTwo);
-                let colorThree = "rgb(0,120,72)";//DarkGreen
+                var colorThree = "rgb(0,120,72)";//DarkGreen
                 t_x = [76, 75, 76, 78, 78, 90, 90, 92, 76, 76, 80, 82, 84, 86, 91, 91];
                 t_y = [4, 6, 18, 20, 3, 4, 18, 6, 8, 12, 19, 4, 19, 4, 10, 14];
                 t_w = [2, 1, 2, 12, 12, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1];
                 t_h = [2, 12, 2, 1, 1, 2, 2, 12, 2, 2, 1, 1, 1, 1, 2, 2];
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorThree);
-                let colorFour = "rgb(0,201,1)";//LightGreen
+                var colorFour = "rgb(0,201,1)";//LightGreen
                 t_x = [74, 73, 74, 76, 91, 93, 91, 76, 75, 75, 75, 75, 77, 80, 84, 90, 92, 92, 92, 92, 90, 86, 82, 77];
                 t_y = [2, 4, 19, 21, 19, 4, 2, 1, 5, 8, 12, 18, 20, 20, 20, 20, 18, 14, 10, 5, 3, 3, 3, 3];
                 t_w = [3, 2, 3, 16, 3, 2, 3, 16, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1];
@@ -1081,14 +1081,14 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 this.drawColor(ctx, t_x, t_y, t_w, t_h, colorFour);
             },
             speckles: function (ctx) {
-                let colorB = "rgba(224,190,80,1)";
-                let t_x = [3, 6, 8, 8, 13, 15, 15, 16, 18, 20],
+                var colorB = "rgba(224,190,80,1)";
+                var t_x = [3, 6, 8, 8, 13, 15, 15, 16, 18, 20],
                     t_y = [8, 11, 5, 17, 14, 2, 20, 8, 14, 4],
                     t_w = [1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
                     t_h = [3, 3, 3, 3, 2, 3, 2, 3, 3, 2];
                 ctx.fillStyle = colorB;
-                for (let t = 0; t < 5; t++)
-                    for (let index = 0; index < 10; index++)
+                for (var t = 0; t < 5; t++)
+                    for (var index = 0; index < 10; index++)
                         ctx.fillRect(t_x[index] + (t * this.width), t_y[index], t_w[index], t_h[index]);
             }
         });
@@ -1118,7 +1118,7 @@ fg.MovingPlatform = {
             this.nextPosition = this.path[0];
         }
         if (this.segments.length > 0)
-            for (let i = 0, segment; segment = this.segments[i]; i++)
+            for (var i = 0, segment; segment = this.segments[i]; i++)
                 fg.Game.currentLevel.entities[segment.l][segment.c].interact = this.interact;
     },
     setNextPosition: function () {
@@ -1163,8 +1163,8 @@ fg.MovingPlatform = {
     },
     updateSegments: function () {
         if (this.segments.length > 0)
-            for (let i = 0, segment; segment = this.segments[i]; i++) {
-                let sgmt = fg.Game.currentLevel.entities[segment.l][segment.c];
+            for (var i = 0, segment; segment = this.segments[i]; i++) {
+                var sgmt = fg.Game.currentLevel.entities[segment.l][segment.c];
                 if (this.movingOnX)
                     sgmt.x = this.x + (sgmt.index * fg.System.defaultSide);
                 else
@@ -1252,12 +1252,12 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
     return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
         animationIndex: 0,
         drawTile: function (c, ctx) {
-            let imageData = null;
-            let data = null;
+            var imageData = null;
+            var data = null;
             c.width = this.width*6;
             c.height = this.height;
             for (var index = 0; index <= 5; index++) {
-                let offSetX = this.width * index;
+                var offSetX = this.width * index;
                 ctx.fillStyle = "black";
                 ctx.fillRect(offSetX + 0, 0, this.width, this.height);
                 ctx.fillStyle = "#995006";
@@ -1298,15 +1298,17 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         rotation: 0,
         speedX: 0,
         speedY: 0,
-        segments: [],
+        vectorList: [],
         width: fg.System.defaultSide / 2,
         height: fg.System.defaultSide / 2,
-        searchDepth: 8,
+        searchDepth: 1,
         wait: 0,
         aim: 0,
         active: true,
         curAngle: 0,
         castAngle: 0,
+        maxAim: 180,
+        maxWait: 120,
         drawTile: function (c, ctx) {
             c.width = this.width;
             c.height = this.height;
@@ -1317,20 +1319,28 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             ctx.stroke();
             return c;
         },
-        getSegments: function(entities){
-            for(let i = 0, entity; entity = entities[i];i++){
+        getVectors: function(entities){
+            for(var i = 0, entity; entity = entities[i];i++){
                 if(entity.id == this.id) continue;
-                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
-                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
-                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
-                this.segments[this.segments.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
+                if(!entity.vectors) {
+                    entity.vectors = [];
+                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
+                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
+                }
+                for(var k = 0; k < entity.vectors.length;k++)
+                    this.vectorList.push(entity.vectors[k]);
             }
         },
-        checkCollisions: function () {
-            this.segments = [];
-            let ents = fg.Game.searchArea(this.x, this.y, this.searchDepth, Math.round(fg.System.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)))
-            this.getSegments(ents.concat(fg.Game.actors))
-            for (let k = 0; k < 6; k++) {
+        getEntities: function(){
+            this.vectorList = [];
+            var ents = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)))
+            this.getVectors(ents.concat(fg.Game.actors))
+            return ents;
+        },
+        checkCollisions: function (ents) {
+            for (var k = 0; k < 6; k++) {
                 if(k == 0)
                     this.rotation -= 90;
                 else
@@ -1342,7 +1352,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             }
         },
         resolveCollision: function (ents) {
-            for (let i = 0, obj; obj = ents[i]; i++) {
+            for (var i = 0, obj; obj = ents[i]; i++) {
                 if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
                     if (this.speedX != 0) {
                         if (this.speedX > 0)
@@ -1364,7 +1374,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         addSpeed: function () {
             this.speedX = 0;
             this.speedY = 0;
-            let vel = 0.03 * fg.Timer.deltaTime;
+            var vel = 0.03 * fg.Timer.deltaTime;
             switch (this.rotation) {
                 case 0:
                     this.speedX = vel;
@@ -1382,11 +1392,11 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         },
         search: function () {
             if (this.wait == 0) {
-                if (this.segments.length > 0 && this.active) this.moving = true;
+                if (/*this.vectorList.length > 0 && */this.active) this.moving = true;
                 if (this.aim < 150) {
-                    let segValue = 6;
-                    let searchAngle = 360 / segValue;
-                    for (let i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 6 : 1)) {                        
+                    var segValue = 6;
+                    var searchAngle = 360 / segValue;
+                    for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 6 : 1)) {                        
                         this.castRay(i % 360);
                         if (!this.moving)
                             break;
@@ -1403,12 +1413,11 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                         var resultAngle = this.shootAngle - (searchAngle / 2);
                         this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
                     }
-                } else
-                    this.castRay(this.shootAngle);
+                } else this.castRay(this.shootAngle);
 
                 if (this.moving) this.aim = 0;
             } else {
-                this.CastRay(this.shootAngle);
+                this.castRay(this.shootAngle);
                 this.wait--;
             }
         },
@@ -1419,12 +1428,13 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 a: { x: this.x, y: this.y },
                 b: { x: this.x + endCastX, y: this.y + endCastY }
             };
+            //debug
             //this.drawLaser(ray.b);
 
             // Find CLOSEST intersection
             var closestIntersect = null;
-            for (var i = 0; i < this.segments.length; i++) {
-                var intersect = this.getIntersection(ray, this.segments[i]);
+            for (var i = 0; i < this.vectorList.length; i++) {
+                var intersect = this.getIntersection(ray, this.vectorList[i]);
                 if (!intersect) continue;
                 if (!closestIntersect || intersect.param < closestIntersect.param) {
                     closestIntersect = intersect;
@@ -1436,6 +1446,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
 
             if ((intersect.type == TYPE.ACTOR || this.aim >= 150 || this.wait > 0) && intersect.param <= 3.5) {
                 this.aiming(intersect);
+                this.drawTargetCircle(intersect);
                 this.moving = false;
                 this.shootAngle = angle;
                 return false;
@@ -1444,7 +1455,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             return true;
         },
         aiming: function (intersect) {
-            let ctx = fg.System.context;
+            var ctx = fg.System.context;
             if (this.aim <= 150)
                 ctx.lineWidth = 1;
             else
@@ -1457,7 +1468,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 if (this.wait == 0) this.wait = this.maxWait;
 
                 this.aim = 0;
-                if (intersect.type == TYPE.ACTOR) Actors[0].life = 0;
+                if (intersect.type == TYPE.ACTOR) fg.Game.actors[0].life = 0;
 
                 if (intersect.type == TYPE.MARIO) {
                     var objX = parseInt(intersect.id.split("-")[0]);
@@ -1471,8 +1482,9 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 }
             }
         },
-        drawTargetCircle: function () {
-            ctx.fillStyle = "#dd3838";
+        drawTargetCircle: function (intersect) {
+            var ctx = fg.System.context;
+            ctx.strokeStyle = "#dd3838";
             ctx.beginPath();
             ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, 1, 0, 2 * Math.PI, false);
             ctx.stroke();
@@ -1484,24 +1496,24 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             }
         }, 
         drawLaser: function (intersect) {
-            let ctx = fg.System.context;
+            var ctx = fg.System.context;
             // Draw red laser
             ctx.save();
             ctx.strokeStyle = "#dd3838";
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(this.x - fb.Game.screenOffsetX, this.y - fb.Game.screenOffsetY);
-            ctx.lineTo(intersect.x - fb.Game.screenOffsetX, intersect.y - fb.Game.screenOffsetY);
+            ctx.moveTo(this.x - fg.Game.screenOffsetX + (this.width/2), this.y - fg.Game.screenOffsetY + (this.height/2));
+            ctx.lineTo(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY);
             ctx.stroke();
             ctx.restore();
         },
         vanish: function (intersect) {
-            let entities = fg.Game.currentLevel.entities;
-            let tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
-            let tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
+            var entities = fg.Game.currentLevel.entities;
+            var tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
+            var tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
 
-            let objX = parseInt(tempX);
-            let objY = parseInt(tempY);
+            var objX = parseInt(tempX);
+            var objY = parseInt(tempY);
 
             if (entities[objX - 1][objY + 0] && entities[objX - 1][objY + 0].type == TYPE.MARIO) entities[objX - 1][objY + 0].tileSet = "";
             if (entities[objX - 1][objY + 1] && entities[objX - 1][objY + 1].type == TYPE.MARIO) entities[objX - 1][objY + 1].tileSet = "";
@@ -1512,19 +1524,20 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             if (entities[objX - 0][objY - 1] && entities[objX - 0][objY - 1].type == TYPE.MARIO) entities[objX - 0][objY - 1].tileSet = "";
             if (entities[objX - 1][objY - 1] && entities[objX - 1][objY - 1].type == TYPE.MARIO) entities[objX - 1][objY - 1].tileSet = "";
         },
-        getIntersection: function getIntersection(ray, segment) {
+        getIntersection: function getIntersection(ray, vector) {
             var r_px = ray.a.x;
             var r_py = ray.a.y;
             var r_dx = ray.b.x - ray.a.x;
             var r_dy = ray.b.y - ray.a.y;
             
-            var s_px = segment.a.x;
-            var s_py = segment.a.y;
-            var s_dx = segment.b.x - segment.a.x;
-            var s_dy = segment.b.y - segment.a.y;
+            var s_px = vector.a.x;
+            var s_py = vector.a.y;
+            var s_dx = vector.b.x - vector.a.x;
+            var s_dy = vector.b.y - vector.a.y;
 
             // Are they parallel? If so, no intersect
-            if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;
+            /*if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;*/
+            if(r_dy == s_dy || r_dx == s_dx) return null;
 
             // SOLVE FOR T1 & T2
             var T2 = (r_dx * (s_py - r_py) + r_dy * (r_px - s_px)) / (s_dx * r_dy - s_dy * r_dx);
@@ -1541,13 +1554,14 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 x: r_px + r_dx * T1,
                 y: r_py + r_dy * T1,
                 param: T1,
-                type: segment.type,
-                id: segment.id
+                type: vector.type,
+                id: vector.id
             };
         },
         update: function () {
+            var entities = this.getEntities();
             if (this.moving) {
-                this.checkCollisions();
+                this.checkCollisions(entities);
                 switch (this.rotation) {
                     case 0:
                     case 180:
@@ -1565,7 +1579,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
 } 
 
 fg.Slope = function (id, type, x, y, cx, cy, index) {
-    let slope = Object.create(fg.protoEntity);
+    var slope = Object.create(fg.protoEntity);
     slope.init(id, type, x, y, cx, cy, index);
     slope.slope = true;
     slope.backGround = true;
@@ -1593,8 +1607,8 @@ fg.Slope = function (id, type, x, y, cx, cy, index) {
         return c;
     };
     slope.drawNE = function (ctx) {
-        let height = 0, width = 0;
-        for (let i = 0; i < 6; i++) {
+        var height = 0, width = 0;
+        for (var i = 0; i < 6; i++) {
             width += i * this.width;
             ctx.moveTo(width, 0);
             ctx.lineTo(width, this.height);
@@ -1602,8 +1616,8 @@ fg.Slope = function (id, type, x, y, cx, cy, index) {
         }
     };
     slope.drawNW = function (ctx) {
-        let height = 0, width = 0;
-        for (let i = 0; i < 6; i++) {
+        var height = 0, width = 0;
+        for (var i = 0; i < 6; i++) {
             width += i * this.width;
             ctx.moveTo(width + this.width * (i + 1), 0);
             ctx.lineTo(width + this.width * (i + 1), this.height);
@@ -1637,7 +1651,7 @@ fg.Slope = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Crate = function (id, type, x, y, cx, cy, index) {
-    let crate = Object.create(fg.protoEntity);
+    var crate = Object.create(fg.protoEntity);
     crate = Object.assign(crate, fg.Active);
     crate.init(id, type, x, y, cx, cy, index);
     crate.width = fg.System.defaultSide / 2;
@@ -1670,7 +1684,7 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Actor = function (id, type, x, y, cx, cy, index) {
-    let actor = Object.create(fg.protoEntity);
+    var actor = Object.create(fg.protoEntity);
     actor = Object.assign(actor, fg.Active);
     actor.init(id, type, x, y, cx, cy, index);
     actor.width = fg.System.defaultSide / 3;
@@ -1711,13 +1725,14 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
             this.soilFriction = 1;
             this.speedX = this.speedX + this.getAccelX() <= this.maxSpeedX ? this.speedX + this.getAccelX() : this.maxSpeedX;
         }
+        this.vectors = undefined;
         fg.Active.update.call(this);
     };
     return actor;
 }
 
 fg.Level = function (name) {
-    let level = Object.create(fg.protoLevel);
+    var level = Object.create(fg.protoLevel);
     level.init(name);
     return level;
 }
@@ -1764,7 +1779,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 16, fg.System.defaultSide * 95, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 168, fg.System.defaultSide * 229, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1812,9 +1827,9 @@ fg.Game =
                     ((fg.System.canvas.height / 2) + fg.Game.screenOffsetY),
                     fg.System.searchDepth, Math.round(fg.System.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)),
                     this.updateEntity);
-                for (let index = 0, entity; entity = this.actors[index]; index++)
+                for (var index = 0, entity; entity = this.actors[index]; index++)
                     this.updateEntity(entity);
-                for (let index = 0, entity; entity = this.foreGroundEntities[index]; index++)
+                for (var index = 0, entity; entity = this.foreGroundEntities[index]; index++)
                     entity.draw(true);
                 fg.Camera.update();
             } else {
@@ -1830,23 +1845,23 @@ fg.Game =
         },
         searchArea: function (startX, startY, depthX, depthY, loopCallBack, endLoopCallBack, caller) {
             this.currentEntities = [];
-            const mainColumn = Math.floor(startX / fg.System.defaultSide);
-            const mainRow = Math.floor(startY / fg.System.defaultSide);
+            const mainColumn = Math.round(startX / fg.System.defaultSide);
+            const mainRow = Math.round(startY / fg.System.defaultSide);
             const startRowIndex = mainRow - depthY < 0 ? 0 : mainRow - depthY;
             const endRowIndex = mainRow + depthY > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : mainRow + depthY;
             const startColIndex = mainColumn - depthX < 0 ? 0 : mainColumn - depthX;
             const endColIndex = mainColumn + depthX > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : mainColumn + depthX;
 
-            for (let i = (endRowIndex - 1); i >= startRowIndex; i--) {
-                for (let k = startColIndex, obj; k < endColIndex; k++) {
-                    let obj = fg.Game.currentLevel.entities[i][k];
-                    if (!obj)
+            for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
+                for (var k = startColIndex, obj; k < endColIndex; k++) {
+                    var obj = fg.Game.currentLevel.entities[i][k];
+                    if (!obj || obj.type == TYPE.DARKNESS)
                         continue;
                     if (loopCallBack)
                         (!caller ? loopCallBack : loopCallBack.bind(caller))(obj);
                     this.currentEntities.push(obj);
                     if (obj.target && obj.target.segments)
-                        for (let index = 0, entity; entity = obj.target.segments[index]; index++)
+                        for (var index = 0, entity; entity = obj.target.segments[index]; index++)
                             this.currentEntities.push(entity);
                 }
             }
@@ -1868,7 +1883,7 @@ fg.Game =
             return false;
         },
         showTitle: function () {
-            let ctx = fg.System.context;
+            var ctx = fg.System.context;
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, fg.System.canvas.width, fg.System.canvas.height);
             ctx.closePath();
@@ -1962,23 +1977,23 @@ fg.Game =
             }*/
         },
         drawBackGround: function () {
-            let bgSize = 4;
-            let bgRow = Math.floor(((c.height / 2) + moveDown) * .5 / (defaultHeight * 2));
-            let bgColumn = Math.floor(((c.width / 2) + scroller) * .5 / (defaultWidth * 2));
+            var bgSize = 4;
+            var bgRow = Math.floor(((c.height / 2) + moveDown) * .5 / (defaultHeight * 2));
+            var bgColumn = Math.floor(((c.width / 2) + scroller) * .5 / (defaultWidth * 2));
 
-            let bgDrawDepthX = disableBG ? -1 : 4;//6
-            let bgDrawDepthY = disableBG ? -1 : 3;//6
+            var bgDrawDepthX = disableBG ? -1 : 4;//6
+            var bgDrawDepthY = disableBG ? -1 : 3;//6
 
-            let startBgRowIndex = /*bgRow - bgDrawDepthY < 0 ? 0 :*/ bgRow - bgDrawDepthY;
-            let endBgRowIndex = bgRow + bgDrawDepthY;
+            var startBgRowIndex = /*bgRow - bgDrawDepthY < 0 ? 0 :*/ bgRow - bgDrawDepthY;
+            var endBgRowIndex = bgRow + bgDrawDepthY;
 
-            let startBgColIndex = /*bgColumn - bgDrawDepthX < 0 ? 0 :*/ bgColumn - bgDrawDepthX;
-            let endBgColIndex = bgColumn + bgDrawDepthX;
+            var startBgColIndex = /*bgColumn - bgDrawDepthX < 0 ? 0 :*/ bgColumn - bgDrawDepthX;
+            var endBgColIndex = bgColumn + bgDrawDepthX;
 
-            for (let i = startBgRowIndex; i <= endBgRowIndex; i++) {
-                for (let k = startBgColIndex, obj; k <= endBgColIndex; k++) {
-                    let bgRowIndex = (i > 0 ? i : bgSize + i) % bgSize;
-                    let bgColIndex = (k > 0 ? k : bgSize + k) % bgSize;
+            for (var i = startBgRowIndex; i <= endBgRowIndex; i++) {
+                for (var k = startBgColIndex, obj; k <= endBgColIndex; k++) {
+                    var bgRowIndex = (i > 0 ? i : bgSize + i) % bgSize;
+                    var bgColIndex = (k > 0 ? k : bgSize + k) % bgSize;
                     obj = BackGround[bgRowIndex][bgColIndex];
                     if (!obj)
                         continue;
@@ -2069,7 +2084,7 @@ fg.Timer = {
     ticks: 0,
     fps: 0,
     update: function () {
-        let d = new Date();
+        var d = new Date();
         this.currentTime = d.getTime();
         if (!this.lastTime)
             this.lastTime = this.currentTime - 15;
