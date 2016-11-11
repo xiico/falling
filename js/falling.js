@@ -1309,6 +1309,8 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         castAngle: 0,
         maxAim: 180,
         maxWait: 120,
+        currentEntities: [],
+        laserPoint: { x: 0, y: 0 },
         drawTile: function (c, ctx) {
             c.width = this.width;
             c.height = this.height;
@@ -1320,6 +1322,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             return c;
         },
         getVectors: function(entities){
+            this.vectorList = [];
             for(var i = 0, entity; entity = entities[i];i++){
                 if(entity.id == this.id) continue;
                 if(!entity.vectors) {
@@ -1333,13 +1336,8 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                     this.vectorList.push(entity.vectors[k]);
             }
         },
-        getEntities: function(){
-            this.vectorList = [];
-            var ents = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)))
-            this.getVectors(ents.concat(fg.Game.actors))
-            return ents;
-        },
-        checkCollisions: function (ents) {
+        checkCollisions: function () {
+            var entities = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)));
             for (var k = 0; k < 6; k++) {
                 if(k == 0)
                     this.rotation -= 90;
@@ -1348,7 +1346,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 if (this.rotation < 0) this.rotation = 360 + this.rotation;
                 if (this.rotation == 360) this.rotation = 0;
                 this.addSpeed();
-                if(!this.resolveCollision(ents)) if(this.attached) return;
+                if(!this.resolveCollision(entities)) if(this.attached) return;
             }
         },
         resolveCollision: function (ents) {
@@ -1390,26 +1388,52 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                     break;
             }
         },
-        search: function () {
-            if (this.wait == 0) {
-                if (/*this.vectorList.length > 0 && */this.active) this.moving = true;
+        searchArea: function(actor){
+            this.currentEntities = [];
+            var startCol = Math.floor(Math.min(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
+            var startRow = Math.floor(Math.min(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
+            var endCol = Math.ceil(Math.max(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
+            var endRow = Math.ceil(Math.max(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));            
+            var startRowIndex = startRow < 0 ? 0 : startRow;
+            var endRowIndex = endRow > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : endRow;
+            var startColIndex = startCol < 0 ? 0 : startCol;
+            var endColIndex = endCol > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : endCol;
+
+            for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
+                for (var k = startColIndex, obj; k <= endColIndex; k++) {
+                    var obj = fg.Game.currentLevel.entities[i][k];
+                    if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL)
+                        continue;
+                    this.currentEntities.push(obj);
+                    if (obj.target && obj.target.segments)
+                        for (var index = 0, entity; entity = obj.target.segments[index]; index++)
+                            this.currentEntities.push(entity);
+                }
+            }         
+            this.currentEntities.push(actor);   
+        },
+        updateVectors: function (actor) {
+            if(actor) {
+                this.laserPoint.x = (actor.x + (actor.width / 2));
+                this.laserPoint.y = (actor.y + (actor.height / 2));
+            }
+            this.searchArea(actor);
+            this.getVectors(this.currentEntities);
+        },
+        search: function () {            
+            if (this.wait == 0) {                
+                if (this.active) this.moving = true;
                 if (this.aim < 150) {
-                    var segValue = 6;
+                    var segValue = 12;
                     var searchAngle = 360 / segValue;
-                    for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 6 : 1)) {                        
+                    this.updateVectors(fg.Game.actors[0]);
+                    this.curAngle = Math.round(Math.atan2(fg.Game.actors[0].y + (fg.Game.actors[0].height / 2) - this.y + (this.height / 2), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + this.width / 2)) * 180 / Math.PI) - (searchAngle/2);
+                    for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {                        
                         this.castRay(i % 360);
                         if (!this.moving)
                             break;
                     }
-                    if (this.aim <= 0) {
-                        if (this.castAngle < segValue) this.castAngle++;
-                        else {
-                            this.curAngle++;
-                            this.curAngle = this.curAngle % 360;
-                            this.castAngle = 0;
-                        }
-                        this.shootAngle = this.rotation;
-                    } else {
+                    if (this.aim > 0) {
                         var resultAngle = this.shootAngle - (searchAngle / 2);
                         this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
                     }
@@ -1425,7 +1449,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             var endCastX = Math.cos(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
             var endCastY = Math.sin(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
             var ray = {
-                a: { x: this.x, y: this.y },
+                a: { x: this.x + (this.width/2), y: this.y + (this.height/2) },
                 b: { x: this.x + endCastX, y: this.y + endCastY }
             };
             //debug
@@ -1443,6 +1467,9 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             var intersect = closestIntersect;
 
             if (!intersect) return true;
+
+            //debug
+            //this.drawLaser(intersect);
 
             if ((intersect.type == TYPE.ACTOR || this.aim >= 150 || this.wait > 0) && intersect.param <= 3.5) {
                 this.aiming(intersect);
@@ -1558,10 +1585,9 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 id: vector.id
             };
         },
-        update: function () {
-            var entities = this.getEntities();
+        update: function () {            
             if (this.moving) {
-                this.checkCollisions(entities);
+                this.checkCollisions();
                 switch (this.rotation) {
                     case 0:
                     case 180:
@@ -1845,12 +1871,12 @@ fg.Game =
         },
         searchArea: function (startX, startY, depthX, depthY, loopCallBack, endLoopCallBack, caller) {
             this.currentEntities = [];
-            const mainColumn = Math.round(startX / fg.System.defaultSide);
-            const mainRow = Math.round(startY / fg.System.defaultSide);
-            const startRowIndex = mainRow - depthY < 0 ? 0 : mainRow - depthY;
-            const endRowIndex = mainRow + depthY > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : mainRow + depthY;
-            const startColIndex = mainColumn - depthX < 0 ? 0 : mainColumn - depthX;
-            const endColIndex = mainColumn + depthX > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : mainColumn + depthX;
+            var mainColumn = Math.round(startX / fg.System.defaultSide);
+            var mainRow = Math.round(startY / fg.System.defaultSide);
+            var startRowIndex = mainRow - depthY < 0 ? 0 : mainRow - depthY;
+            var endRowIndex = mainRow + depthY > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : mainRow + depthY;
+            var startColIndex = mainColumn - depthX < 0 ? 0 : mainColumn - depthX;
+            var endColIndex = mainColumn + depthX > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : mainColumn + depthX;
 
             for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
                 for (var k = startColIndex, obj; k < endColIndex; k++) {
@@ -2105,7 +2131,7 @@ fg.Timer = {
     }
 }
 
-const TYPE = {
+var TYPE = {
     WALL: "X",
     BOUNCER: "B",
     GROWER: "G",
