@@ -68,6 +68,34 @@
             }
         });
     }
+    // http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+    // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+    // requestAnimationFrame polyfill by Erik Möller. fixes from Paul Irish and Tino Zijdel
+    // MIT license
+    (function() {
+        var lastTime = 0;
+        var vendors = ['ms', 'moz', 'webkit', 'o'];
+        for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+            window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+            window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+                                    || window[vendors[x]+'CancelRequestAnimationFrame'];
+        }
+    
+        if (!window.requestAnimationFrame)
+            window.requestAnimationFrame = function(callback, element) {
+                var currTime = new Date().getTime();
+                var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+                timeToCall);
+                lastTime = currTime + timeToCall;
+                return id;
+            };
+    
+        if (!window.cancelAnimationFrame)
+            window.cancelAnimationFrame = function(id) {
+                clearTimeout(id);
+            };
+    }());
 }
 )(window);
 
@@ -234,10 +262,13 @@ fg.protoLevel = {
         while (this.marioBuffer.length > 0) {
             this.marioBuffer[this.marioBuffer.length - 1].setSubTiles();
             if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203" || this.marioBuffer[this.marioBuffer.length - 1].tileSet == "30313233") {
-                if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203")
-                    this.marioBuffer[this.marioBuffer.length - 1].cacheX = 0;
-                else
+                if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203"){
+                    fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = 0;
+                    this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
+                } else { 
+                    fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = fg.System.defaultSide * 3;
                     this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.System.defaultSide * 3;
+                }
             } else {
                 if (!fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet]) fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = (5 + Object.keys(fg.Render.marioCache).length) * fg.System.defaultSide;
                 this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
@@ -345,7 +376,7 @@ fg.protoEntity = {
                 fg.Render.draw(fg.Render.cache(this.type, c), this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
         }
         else {
-            if (!foreGround && !this.backGround || foreGround && !this.foreGround) return;
+            if (!foreGround && !this.backGround || foreGround && !this.foreGround || this.vanished) return;
             fg.Render.draw(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
         }
     },
@@ -1311,6 +1342,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         maxWait: 120,
         currentEntities: [],
         laserPoint: { x: 0, y: 0 },
+        actorBeams:[],
         drawTile: function (c, ctx) {
             c.width = this.width;
             c.height = this.height;
@@ -1402,8 +1434,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
                 for (var k = startColIndex, obj; k <= endColIndex; k++) {
                     var obj = fg.Game.currentLevel.entities[i][k];
-                    if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL)
-                        continue;
+                    if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL || obj.vanished) continue;
                     this.currentEntities.push(obj);
                     if (obj.target && obj.target.segments)
                         for (var index = 0, entity; entity = obj.target.segments[index]; index++)
@@ -1413,31 +1444,51 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             this.currentEntities.push(actor);   
         },
         updateVectors: function (actor) {
-            if(actor) {
+            if(actor && this.aim < 150 && this.wait == 0) {
                 this.laserPoint.x = (actor.x + (actor.width / 2));
                 this.laserPoint.y = (actor.y + (actor.height / 2));
             }
             this.searchArea(actor);
             this.getVectors(this.currentEntities);
         },
-        search: function () {            
+        laserFinalMoments: function(){
+            var count = 0;
+            var targetDistance = Math.sqrt(Math.pow((this.y + (this.height / 2)) - this.laserPoint.y, 2) + Math.pow((this.x + (this.width / 2)) - this.laserPoint.x, 2));
+            while(this.castRay(this.shootAngle) && targetDistance < (fg.System.canvas.width)) {                
+                this.laserPoint.x = this.laserPoint.x + Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+                this.laserPoint.y = this.laserPoint.y + Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+                this.updateVectors(fg.Game.actors[0]);
+                count++;
+                if(count > 40)
+                return;
+            }
+        },
+        search: function () {   
+            this.updateVectors(fg.Game.actors[0]);
             if (this.wait == 0) {                
                 if (this.active) this.moving = true;
                 if (this.aim < 150) {
                     var segValue = 12;
-                    var searchAngle = 360 / segValue;
-                    this.updateVectors(fg.Game.actors[0]);
-                    this.curAngle = Math.round(Math.atan2(fg.Game.actors[0].y + (fg.Game.actors[0].height / 2) - this.y + (this.height / 2), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + this.width / 2)) * 180 / Math.PI) - (searchAngle/2);
+                    var searchAngle = 360 / segValue;                    
+                    this.curAngle = Math.round(Math.atan2(fg.Game.actors[0].y + (fg.Game.actors[0].height / 2) - this.y + (this.height / 2), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - this.x + (this.width / 2)) * 180 / Math.PI) - (searchAngle/2);
+                    this.actorBeams = [];
                     for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {                        
                         this.castRay(i % 360);
-                        if (!this.moving)
-                            break;
+                        // if (!this.moving)
+                        //     break;
+                    }
+                    if(this.actorBeams.length > 0){ 
+                        var beam = this.actorBeams[Math.floor(this.actorBeams.length / 2)];
+                        this.aiming(beam.intersect);
+                        this.drawTargetCircle(beam.intersect);
+                        this.moving = false;
+                        this.shootAngle = beam.angle;
                     }
                     if (this.aim > 0) {
                         var resultAngle = this.shootAngle - (searchAngle / 2);
                         this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
                     }
-                } else this.castRay(this.shootAngle);
+                } else this.laserFinalMoments();
 
                 if (this.moving) this.aim = 0;
             } else {
@@ -1471,12 +1522,16 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             //debug
             //this.drawLaser(intersect);
 
-            if ((intersect.type == TYPE.ACTOR || this.aim >= 150 || this.wait > 0) && intersect.param <= 3.5) {
-                this.aiming(intersect);
-                this.drawTargetCircle(intersect);
-                this.moving = false;
-                this.shootAngle = angle;
-                return false;
+            if ((intersect.type == TYPE.ACTOR || this.aim >= 150 || this.wait > 0) && intersect.param <= 3.75) {
+                if (this.aim < 150 && this.wait == 0)
+                    this.actorBeams.push({ angle: angle, intersect: intersect });
+                else {
+                    this.aiming(intersect);
+                    this.drawTargetCircle(intersect);
+                    this.moving = false;
+                    this.shootAngle = angle;
+                    return false;
+                }
             }
 
             return true;
@@ -1714,12 +1769,15 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor = Object.assign(actor, fg.Active);
     actor.init(id, type, x, y, cx, cy, index);
     actor.width = fg.System.defaultSide / 3;
+    actor.height = fg.System.defaultSide - 4;
     actor.color = "red";
     actor.canJump = true;
     actor.active = false;
     actor.glove = true;
     actor.cacheWidth = actor.width;
     actor.cacheHeight = actor.height;
+    actor.wallJump = true;
+    actor.wallSliding = false;
     actor.drawTile = function (c, ctx) {
         c.width = this.width * 2;
         c.height = this.height;
@@ -1732,8 +1790,10 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.update = function () {
         this.soilFriction = 0.25;
         if (fg.Input.actions["jump"]) {
-            if (this.canJump)
+            if (this.canJump) {
                 this.speedY = -(Math.abs(this.speedY) + this.accelY <= 0.2 ? Math.abs(this.speedY) + this.accelY : 0.2);
+                if (this.wallSliding) this.speedX = fg.Input.actions["left"] ? 0.06 : -0.06;
+            }
             /*else
                 this.speedY = this.speedY * 0.6;*/
 
@@ -1753,6 +1813,14 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
         }
         this.vectors = undefined;
         fg.Active.update.call(this);
+        this.wallSliding = false;
+        if (this.wallJump && !this.grounded && this.speedY > 0) {
+            if ((fg.Input.actions["left"] || fg.Input.actions["right"]) && this.speedX == 0) {
+                this.wallSliding = true;
+                if(!fg.Input.actions["jump"]) this.canJump = true;
+                this.speedY = 0.082;
+            }
+        }
     };
     return actor;
 }
@@ -1805,7 +1873,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 168, fg.System.defaultSide * 229, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 154, fg.System.defaultSide * 230, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1898,7 +1966,7 @@ fg.Game =
             return this.currentEntities;
         },
         testOverlap: function (a, b) {
-            if (a.id == b.id || !b.collidable) return false;
+            if (a.id == b.id || !b.collidable || b.vanished) return false;
             if (a.x > b.x + b.width || a.x + a.width < b.x) return false;
             if (a.x < b.x + b.width &&
                 a.x + a.width > b.x &&
