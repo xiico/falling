@@ -163,16 +163,29 @@ fg.Camera = {
     right: 0,
     top: 0,
     bottom: 0,
-    init: function () { },
+    dampX: 0,
+    dampY: 0,
+    dampRatio: 0.96,
+    position:0,
+    init: function () {},
     follow: function (obj) {
         this.following = obj;
     },
     moveTo: function (position) { },
     update: function () {
-        if (!this.following)
-            return;
-        fg.Game.screenOffsetX = Math.round(Math.min(Math.max(this.following.x + (this.following.width / 2) - (fg.System.canvas.width / 2), 0), fg.Game.currentLevel.width - fg.System.canvas.width));
-        fg.Game.screenOffsetY = Math.floor(Math.min(Math.max(this.following.y + (this.following.height / 2) - (fg.System.canvas.height / 2), 0), fg.Game.currentLevel.height - fg.System.canvas.height));
+        if (!this.following) return;
+        
+        this.dampX = ((this.following.x - fg.Game.screenOffsetX) - ((fg.System.canvas.width / 2) - (this.following.width / 2))) - (Math.abs(this.following.speedX) >= this.following.maxSpeedX * 0.9 ? this.following.speedX * fg.Timer.deltaTime * 2 : 0);
+        this.dampY = ((this.following.y - fg.Game.screenOffsetY) - ((fg.System.canvas.height / 2) - (this.following.height / 2)));        
+
+        if(Math.abs(this.dampX) > 0.1) this.dampX *= this.dampRatio;
+        if(Math.abs(this.dampY) > 0.1) this.dampY *= this.dampRatio;
+
+        var posX = Math.min(Math.max(((this.following.x) + (this.following.width / 2) - (fg.System.canvas.width / 2)) - this.dampX, 0), fg.Game.currentLevel.width - fg.System.canvas.width);
+        var posY = Math.min(Math.max(((this.following.y - this.dampY) + (this.following.height / 2) - (fg.System.canvas.height / 2)), 0), fg.Game.currentLevel.height - fg.System.canvas.height);
+        fg.Game.screenOffsetX = Math.round(posX);// this.following.speedX >= 0 ? Math.floor(posX) : Math.ceil(posX);
+        fg.Game.screenOffsetY = Math.round(posY);//this.following.speedY <= 0 ? Math.ceil(posY) : Math.round(posY) ;
+
         this.left = fg.Game.screenOffsetX;
         this.top = fg.Game.screenOffsetY;
         this.right = fg.Game.screenOffsetX + fg.System.canvas.width;
@@ -235,6 +248,7 @@ fg.protoLevel = {
                 break;
         }
         if (settings) Object.assign(entity, settings);
+        return entity;
     },
     applyFeaturesToEntity: function (entity) {
         var features = undefined;
@@ -412,10 +426,11 @@ fg.Active =
         nextPosition: {},
         addedSpeedX: 0,
         backGround: true,
+        life: 100,
         update: function () {
             this.addGravity();
             this.entitiesToTest = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, this.searchDepth);
-            this.lastPosition = { x: this.x, y: this.y, grounded: this.grounded };
+            this.lastPosition = { x: this.x, y: this.y, grounded: this.grounded, speedX: this.speedX, speedY: this.speedY };
             this.speedX = this.getSpeedX();
             for (var index = 0, entity; entity = fg.Game.actors[index]; index++)
                 this.entitiesToTest.push(entity);
@@ -535,14 +550,14 @@ fg.Active =
             var t = (Math.round(this.x + (this.width / 2)) - obj.x) / (fg.System.defaultSide / (obj.rowSize || 1));
             var hitY = (1 - t) * obj.leftY + t * obj.rightY;
             if (this.y + this.height >= hitY) {
-                if (!fg.Input.actions["jump"])
-                    this.canJump = true;
+                if (!fg.Input.actions["jump"]) this.canJump = true;
                 this.speedY = 0;
                 this.y = hitY - this.height;
                 this.grounded = true;
             }
         },
         resolveNonOneWayYCollision: function (obj) {
+            if(this.type == TYPE.ACTOR && obj.type == TYPE.CHECKPOINT) this.lastCheckPoint = obj;
             if (Math.abs(this.speedY) <= fg.Game.gravity) return;
             this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
             if (obj.interactive) obj.interact(this);
@@ -584,7 +599,7 @@ fg.Active =
                     this.resolveNonOneWayYCollision(obj);
                 } else {
                     if (obj.interactive) obj.interact(this);
-                    if (this.lastPosition.y + this.height <= obj.y && this.y + this.height > obj.y) {
+                    if ((this.lastPosition.y + this.height) - (this.lastPosition.speedY * fg.Timer.deltaTime) <= obj.y && this.y + this.height > obj.y) {
                         this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
                         this.y = obj.y - this.height;
                         this.speedY = this.speedY * -1;
@@ -654,7 +669,9 @@ fg.Circle = function (id, type, x, y, cx, cy, index) {
     circle.bounceness = 0.7;
     circle.width = fg.System.defaultSide / 2;
     circle.height = fg.System.defaultSide / 2;
-    circle.drawTile = function (c, ctx) {
+    circle.drawTile = function (c, ctx) {        
+        this.cacheWidth = this.width;
+        this.cacheHeight = this.height;;
         c.width = this.width * 2;
         c.height = this.height;
         ctx.fillStyle = this.color;
@@ -846,9 +863,18 @@ fg.Switch = {
         if (this.targetId) {
             this.target = fg.Game.currentLevel.entities[this.targetId.split('-')[0]][this.targetId.split('-')[1]];
             this.target.drawSegments = this.drawSegments;
-            this.target.update = function (bj) {
-                if (this.drawSegments) this.drawSegments();
-            }
+            // this.target.oldUpdate = this.target.update;
+            // this.target.switch = this;
+            // this.target.update = function (bj) {                
+            //     if (this.drawSegments) this.drawSegments();
+            //     //if(this.oldUpdate) this.oldUpdate.apply(this);
+            // }
+            this.target.update = (function (original) {
+                return function () {
+                    if (this.drawSegments) this.drawSegments();
+                    original.apply(this);
+                }
+            })(this.target.update)
         }
         this.timer = this.defaulTimer;
     },
@@ -1323,7 +1349,8 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Sentry = function (id, type, x, y, cx, cy, index) {
-    return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+    return fg.Game.currentLevel.applySettingsToEntity(
+        Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
         attached: false,
         moving: true,
         rotation: 0,
@@ -1338,11 +1365,12 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         active: true,
         curAngle: 0,
         castAngle: 0,
-        maxAim: 180,
+        maxAim: 120,
         maxWait: 120,
         currentEntities: [],
         laserPoint: { x: 0, y: 0 },
         actorBeams:[],
+        stationary: false,
         drawTile: function (c, ctx) {
             c.width = this.width;
             c.height = this.height;
@@ -1441,10 +1469,10 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                             this.currentEntities.push(entity);
                 }
             }         
-            this.currentEntities.push(actor);   
+            if(!actor.vanished) this.currentEntities.push(actor);   
         },
-        updateVectors: function (actor) {
-            if(actor && this.aim < 150 && this.wait == 0) {
+        updateVectors: function (actor) {            
+            if(actor && !actor.vanished && this.aim < (this.maxAim * 0.8) && this.wait == 0) {
                 this.laserPoint.x = (actor.x + (actor.width / 2));
                 this.laserPoint.y = (actor.y + (actor.height / 2));
             }
@@ -1467,10 +1495,10 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             this.updateVectors(fg.Game.actors[0]);
             if (this.wait == 0) {                
                 if (this.active) this.moving = true;
-                if (this.aim < 150) {
+                if (this.aim < (this.maxAim * 0.8)) {
                     var segValue = 12;
                     var searchAngle = 360 / segValue;                    
-                    this.curAngle = Math.round(Math.atan2(fg.Game.actors[0].y + (fg.Game.actors[0].height / 2) - this.y + (this.height / 2), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - this.x + (this.width / 2)) * 180 / Math.PI) - (searchAngle/2);
+                    this.curAngle = Math.round(Math.atan2((fg.Game.actors[0].y + (fg.Game.actors[0].height / 2)) - (this.y + (this.height / 2)), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + (this.width / 2))) * 180 / Math.PI) - (searchAngle/2);
                     this.actorBeams = [];
                     for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {                        
                         this.castRay(i % 360);
@@ -1522,8 +1550,8 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             //debug
             //this.drawLaser(intersect);
 
-            if ((intersect.type == TYPE.ACTOR || this.aim >= 150 || this.wait > 0) && intersect.param <= 3.75) {
-                if (this.aim < 150 && this.wait == 0)
+            if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) && intersect.param <= 3.75) {
+                if (this.aim < (this.maxAim * 0.8) && this.wait == 0)
                     this.actorBeams.push({ angle: angle, intersect: intersect });
                 else {
                     this.aiming(intersect);
@@ -1538,7 +1566,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
         },
         aiming: function (intersect) {
             var ctx = fg.System.context;
-            if (this.aim <= 150)
+            if (this.aim <= (this.maxAim * 0.8))
                 ctx.lineWidth = 1;
             else
                 ctx.lineWidth = 2;
@@ -1641,7 +1669,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             };
         },
         update: function () {            
-            if (this.moving) {
+            if (this.moving && !this.stationary) {
                 this.checkCollisions();
                 switch (this.rotation) {
                     case 0:
@@ -1656,7 +1684,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             } 
             this.search();
         }
-    });
+    }));
 } 
 
 fg.Slope = function (id, type, x, y, cx, cy, index) {
@@ -1773,11 +1801,17 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.color = "red";
     actor.canJump = true;
     actor.active = false;
-    actor.glove = true;
     actor.cacheWidth = actor.width;
     actor.cacheHeight = actor.height;
-    actor.wallJump = true;
+    //powerUps
+    actor.glove = false;
+    actor.wallJump = false;
+
     actor.wallSliding = false;
+    actor.segments = [];
+    actor.wait = 0;
+    actor.respawn = 0;
+    actor.lastCheckPoint = null;
     actor.drawTile = function (c, ctx) {
         c.width = this.width * 2;
         c.height = this.height;
@@ -1787,26 +1821,63 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
         ctx.fillRect(this.width, 0, this.width, this.height);
         return c;
     };
+    actor.explode = function() {
+        var divider = 4;
+        for (var i = 0; i < this.width / divider; i++) {
+            for (var k = 0; k < this.height / divider; k++) {
+                var segment = fg.Entity(i + "." + k, "C", this.x + (i * divider), this.y + (k * divider), 0, 0, 0);
+                segment.width = divider;
+                segment.height = divider;
+                segment.cacheWidth = segment.width;
+                segment.cacheHeight = segment.height;
+                segment.foreGround = true;
+                segment.speedX = this.speedX;
+                segment.speedY = this.speedY;
+                segment.bounceness = 0.6;
+                this.segments.push(segment);
+            }
+        }
+        this.vanished = true;
+        this.respawn = 240;
+    },
+    actor.drawSegments = function () {
+        for (var i = 0, segment; segment = this.segments[i]; i++)
+            fg.Game.foreGroundEntities.push(segment);
+    };
+    actor.checkDeath = function () {
+        if (this.life == 0) {
+            if (this.segments.length == 0) this.explode();
+            this.drawSegments();
+            fg.Camera.following = this.segments[0];
+            if (this.respawn > 0) 
+                this.respawn--;
+            else {
+                this.segments = [];
+                this.life = 100;
+                this.vanished = undefined;
+                fg.Camera.following = this;
+                fg.Game.warp(this,{ x: (parseInt(this.lastCheckPoint.id.split("-")[0]) - 1), y: parseInt(this.lastCheckPoint.id.split("-")[1]) });
+            }
+            return  true;
+        }
+        return false;
+    };
     actor.update = function () {
+        if(actor.checkDeath()) return;
         this.soilFriction = 0.25;
         if (fg.Input.actions["jump"]) {
             if (this.canJump) {
                 this.speedY = -(Math.abs(this.speedY) + this.accelY <= 0.2 ? Math.abs(this.speedY) + this.accelY : 0.2);
                 if (this.wallSliding) this.speedX = fg.Input.actions["left"] ? 0.06 : -0.06;
             }
-            /*else
-                this.speedY = this.speedY * 0.6;*/
-
-            if (Math.abs(this.speedY) >= 0.2)
-                this.canJump = false;
+            if (Math.abs(this.speedY) >= 0.2) this.canJump = false;
         }
         this.active = false;
         if (fg.Input.actions["left"]) {
             this.active = true;
             this.soilFriction = 1;
             this.speedX = this.speedX - this.getAccelX() >= -this.maxSpeedX ? this.speedX - this.getAccelX() : -this.maxSpeedX;
-        }
-        else if (fg.Input.actions["right"]) {
+        } else if (fg.Input.actions["right"]) {
             this.active = true;
             this.soilFriction = 1;
             this.speedX = this.speedX + this.getAccelX() <= this.maxSpeedX ? this.speedX + this.getAccelX() : this.maxSpeedX;
@@ -1873,7 +1944,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 154, fg.System.defaultSide * 230, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 67, fg.System.defaultSide * 14, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1923,11 +1994,22 @@ fg.Game =
                     this.updateEntity);
                 for (var index = 0, entity; entity = this.actors[index]; index++)
                     this.updateEntity(entity);
-                for (var index = 0, entity; entity = this.foreGroundEntities[index]; index++)
-                    entity.draw(true);
+                for (var index = this.foreGroundEntities.length - 1, entity; entity = this.foreGroundEntities[index]; index--){
+                    if(entity.type != TYPE.SWITCH) entity.update();
+                    entity.draw(true);                    
+                }
                 fg.Camera.update();
             } else {
 
+            }
+        },
+        warp: function (entity, checkPoint) {
+            var x = checkPoint ? checkPoint.x : 0;//warpx.value;
+            var y = checkPoint ? checkPoint.y : 0;//warpy.value;
+            if (x != "" && y != "") {
+                entity.y = (x * fg.System.defaultSide) + entity.height/2;
+                entity.x = (y * fg.System.defaultSide) + entity.height/2;
+                fg.Camera.fixed = false;
             }
         },
         updateEntity: function (obj) {
