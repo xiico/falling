@@ -457,6 +457,7 @@ fg.Active =
             this.nextPosition = { x: this.x + ((this.speedX + this.addedSpeedX) * fg.Timer.deltaTime), y: this.y + this.speedY * fg.Timer.deltaTime, width: this.width, height: this.height, id: this.id };
             for (var i = this.entitiesToTest.length - 1, obj; obj = this.entitiesToTest[i]; i--) {
                 if (fg.Game.testOverlap(this.nextPosition, obj)) {
+                    if (obj.interactive) obj.interact(this);
                     this.entitiesToResolveX.push(obj);
                     this.entitiesToResolveY.push(obj);
                     if (this.entitiesToResolveX.length >= 4)
@@ -493,7 +494,7 @@ fg.Active =
             }
         },
         resolveForX: function (entitiesToResolve, obj) {
-            if (!fg.Game.testOverlap(this, obj) || obj.oneWay) {
+            if (!fg.Game.testOverlap(this, obj) || obj.oneWay || !obj.collidable) {
                 entitiesToResolve.pop();
                 return;
             } else {
@@ -526,7 +527,7 @@ fg.Active =
                 if (Math.abs(this.y - this.lastPosition.y) >= obj.height)
                     this.y = this.lastPosition.y;
             }
-            if (obj.interactive) obj.interact(this);
+            //if (obj.interactive) obj.interact(this);
         },
         processActorCollisionX: function (obj) {
             if (this.glove) obj.speedX = Math.abs(this.speedX) > this.accelX ? 0 : this.speedX;
@@ -534,7 +535,7 @@ fg.Active =
         },
         slopeXcollision: function (obj) { },
         resolveForY: function (entitiesToResolve, obj) {
-            if (!fg.Game.testOverlap(this, obj)) {
+            if (!fg.Game.testOverlap(this, obj) || !obj.collidable) {
                 entitiesToResolve.pop();
                 return;
             } else {
@@ -543,8 +544,7 @@ fg.Active =
                 else
                     this.slopeYcollision(obj);
 
-                if (obj.oneWay)
-                    entitiesToResolve.pop();
+                if (obj.oneWay) entitiesToResolve.pop();
             }
         },
         slopeYcollision: function (obj) {
@@ -578,7 +578,7 @@ fg.Active =
                     obj.speedX = obj.speedX * 0.70749;
                 }
             }
-            if (obj.interactive) obj.interact(this);
+            //if (obj.interactive) obj.interact(this);
         },
         computeAddedSpeedX: function (newAddedValue) {
             if (newAddedValue == 0) return newAddedValue;
@@ -589,9 +589,7 @@ fg.Active =
         },
         nonSlopeYcollision: function (obj) {
             if (this.speedY >= 0) {
-                if (!fg.Input.actions["jump"])
-                    this.canJump = true;
-                if (obj.interactive) obj.interact(this);
+                if (!fg.Input.actions["jump"]) this.canJump = true;
                 this.grounded = true;
             }
             var intersection = this.getIntersection(obj);
@@ -599,7 +597,6 @@ fg.Active =
                 if (!obj.oneWay) {
                     this.resolveNonOneWayYCollision(obj);
                 } else {
-                    if (obj.interactive) obj.interact(this);
                     if ((this.lastPosition.y + this.height) - (this.lastPosition.speedY * fg.Timer.deltaTime) <= obj.y && this.y + this.height > obj.y) {
                         this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
                         this.y = obj.y - this.height;
@@ -607,15 +604,13 @@ fg.Active =
                         this.speedY = this.speedY * this.bounceness;
                     }
                 }
-            }
-            else {
+            } else {
                 if (obj.oneWay) return;
                 if (this.x <= obj.x)
                     this.x = obj.x - this.width;
                 else
                     this.x = obj.x + obj.width;
-                if (Math.abs(this.x - this.lastPosition.x) >= obj.width)
-                    this.x = this.lastPosition.x;
+                if (Math.abs(this.x - this.lastPosition.x) >= obj.width) this.x = this.lastPosition.x;
                 this.lastPosition.x = this.x;
             }
         },
@@ -1391,11 +1386,7 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         update: function () {
             this.cacheX = this.animationIndex * this.width;
             this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
-        },
-        interact: function(entity){
-            if(entity.type == TYPE.ACTOR){
-
-            }
+            fg.Interactive.update.call(this);
         }
     });
 }
