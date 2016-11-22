@@ -72,30 +72,30 @@
     // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
     // requestAnimationFrame polyfill by Erik Möller. fixes from Paul Irish and Tino Zijdel
     // MIT license
-    (function() {
+    (function () {
         var lastTime = 0;
         var vendors = ['ms', 'moz', 'webkit', 'o'];
-        for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-            window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-            window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
-                                    || window[vendors[x]+'CancelRequestAnimationFrame'];
+        for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+            window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
+            window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame']
+                || window[vendors[x] + 'CancelRequestAnimationFrame'];
         }
-    
+
         if (!window.requestAnimationFrame)
-            window.requestAnimationFrame = function(callback, element) {
+            window.requestAnimationFrame = function (callback, element) {
                 var currTime = new Date().getTime();
                 var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-                var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
-                timeToCall);
+                var id = window.setTimeout(function () { callback(currTime + timeToCall); },
+                    timeToCall);
                 lastTime = currTime + timeToCall;
                 return id;
             };
-    
+
         if (!window.cancelAnimationFrame)
-            window.cancelAnimationFrame = function(id) {
+            window.cancelAnimationFrame = function (id) {
                 clearTimeout(id);
             };
-    }());
+    } ());
 }
 )(window);
 
@@ -166,20 +166,20 @@ fg.Camera = {
     dampX: 0,
     dampY: 0,
     dampRatio: 0.96,
-    position:0,
-    init: function () {},
+    position: 0,
+    init: function () { },
     follow: function (obj) {
         this.following = obj;
     },
     moveTo: function (position) { },
     update: function () {
         if (!this.following) return;
-        
-        this.dampX = ((this.following.x - fg.Game.screenOffsetX) - ((fg.System.canvas.width / 2) - (this.following.width / 2))) - (Math.abs(this.following.speedX) >= this.following.maxSpeedX * 0.9 ? this.following.speedX * fg.Timer.deltaTime * 2 : 0);
-        this.dampY = ((this.following.y - fg.Game.screenOffsetY) - ((fg.System.canvas.height / 2) - (this.following.height / 2)));        
 
-        if(Math.abs(this.dampX) > 0.1) this.dampX *= this.dampRatio;
-        if(Math.abs(this.dampY) > 0.1) this.dampY *= this.dampRatio;
+        this.dampX = ((this.following.x - fg.Game.screenOffsetX) - ((fg.System.canvas.width / 2) - (this.following.width / 2))) - (Math.abs(this.following.speedX) >= this.following.maxSpeedX * 0.9 ? this.following.speedX * fg.Timer.deltaTime * 2 : 0);
+        this.dampY = ((this.following.y - fg.Game.screenOffsetY) - ((fg.System.canvas.height / 2) - (this.following.height / 2)));
+
+        if (Math.abs(this.dampX) > 0.1) this.dampX *= this.dampRatio;
+        if (Math.abs(this.dampY) > 0.1) this.dampY *= this.dampRatio;
 
         var posX = Math.min(Math.max(((this.following.x) + (this.following.width / 2) - (fg.System.canvas.width / 2)) - this.dampX, 0), fg.Game.currentLevel.width - fg.System.canvas.width);
         var posY = Math.min(Math.max(((this.following.y - this.dampY) + (this.following.height / 2) - (fg.System.canvas.height / 2)), 0), fg.Game.currentLevel.height - fg.System.canvas.height);
@@ -276,10 +276,10 @@ fg.protoLevel = {
         while (this.marioBuffer.length > 0) {
             this.marioBuffer[this.marioBuffer.length - 1].setSubTiles();
             if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203" || this.marioBuffer[this.marioBuffer.length - 1].tileSet == "30313233") {
-                if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203"){
+                if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203") {
                     fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = 0;
                     this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
-                } else { 
+                } else {
                     fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = fg.System.defaultSide * 3;
                     this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.System.defaultSide * 3;
                 }
@@ -429,7 +429,7 @@ fg.Active =
         life: 100,
         update: function () {
             this.addGravity();
-            this.entitiesToTest = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, this.searchDepth);
+            this.entitiesToTest = fg.Game.searchArea(this.x + (this.width / 2), this.y + (this.height / 2), this.searchDepth, this.searchDepth);
             this.lastPosition = { x: this.x, y: this.y, grounded: this.grounded, speedX: this.speedX, speedY: this.speedY };
             this.speedX = this.getSpeedX();
             for (var index = 0, entity; entity = fg.Game.actors[index]; index++)
@@ -526,6 +526,7 @@ fg.Active =
                 if (Math.abs(this.y - this.lastPosition.y) >= obj.height)
                     this.y = this.lastPosition.y;
             }
+            if (obj.interactive) obj.interact(this);
         },
         processActorCollisionX: function (obj) {
             if (this.glove) obj.speedX = Math.abs(this.speedX) > this.accelX ? 0 : this.speedX;
@@ -557,10 +558,9 @@ fg.Active =
             }
         },
         resolveNonOneWayYCollision: function (obj) {
-            if(this.type == TYPE.ACTOR && obj.type == TYPE.CHECKPOINT) this.lastCheckPoint = obj;
+            if (this.type == TYPE.ACTOR && obj.type == TYPE.CHECKPOINT) this.lastCheckPoint = obj;
             if (Math.abs(this.speedY) <= fg.Game.gravity) return;
             this.addedSpeedX = this.computeAddedSpeedX((obj.addedSpeedX || obj.speedX) || 0);
-            if (obj.interactive) obj.interact(this);
             if (this.y <= obj.y)
                 this.y = obj.y - this.height;
             else
@@ -578,6 +578,7 @@ fg.Active =
                     obj.speedX = obj.speedX * 0.70749;
                 }
             }
+            if (obj.interactive) obj.interact(this);
         },
         computeAddedSpeedX: function (newAddedValue) {
             if (newAddedValue == 0) return newAddedValue;
@@ -648,6 +649,11 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
         case TYPE.SLOPENW://"╔":
             return fg.Slope(id, type, x, y, cx, cy, index);
         case TYPE.CIRCLE:
+        case TYPE.WALLJUMP:
+        case TYPE.SUPERJUMP:
+        case TYPE.LIGHT:
+        case TYPE.VELOCITY:
+        case TYPE.GLOVE:
             return fg.Circle(id, type, x, y, cx, cy, index);
         case TYPE.MARIO:
             return fg.Mario(id, type, x, y, cx, cy, index);
@@ -662,14 +668,53 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
 
 fg.Circle = function (id, type, x, y, cx, cy, index) {
     var circle = Object.create(fg.protoEntity);
-    circle = Object.assign(circle, fg.Active);
     circle.init(id, type, x, y, cx, cy, index);
-    circle.soilFriction = 0.999;
-    circle.speedX = -0.05;//1.4
-    circle.bounceness = 0.7;
-    circle.width = fg.System.defaultSide / 2;
-    circle.height = fg.System.defaultSide / 2;
-    circle.drawTile = function (c, ctx) {        
+    if (type == TYPE.CIRCLE) {
+        circle = Object.assign(circle, fg.Active);
+        circle.soilFriction = 0.999;
+        circle.speedX = -0.05;//1.4
+        circle.bounceness = 0.7;
+        circle.width = fg.System.defaultSide / 2;
+        circle.height = fg.System.defaultSide / 2;
+    } else {
+        circle.width = fg.System.defaultSide / 3;
+        circle.height = fg.System.defaultSide / 3;
+        Object.assign(circle, fg.Interactive);
+        switch (type) {
+            case TYPE.WALLJUMP:
+                circle.color = 'green';
+                break;
+            case TYPE.SUPERJUMP:
+                circle.color = "brown";
+                break;
+            case TYPE.LIGHT:
+                circle.color = "white";
+                break;
+            case TYPE.VELOCITY:
+                circle.color = "pink";
+                break;
+            case TYPE.GLOVE:
+                circle.color = "orange";
+                break;
+            default:
+                break;
+        }
+        circle.interact = function () {
+            if (this.type == TYPE.GLOVE) {
+                fg.Game.actors[0].glove = true;
+            } else if (this.type == TYPE.LIGHT) {
+                fg.Game.actors[0].light = true;
+            } else if (this.type == TYPE.WALLJUMP) {
+                fg.Game.actors[0].wallJump = true;
+            } else if (this.type == TYPE.SUPERJUMP) {
+                fg.Game.actors[0].superJump = true;
+            } else if (this.type == TYPE.VELOCITY) {
+                fg.Game.actors[0].velocity = true;
+            }
+            fg.Game.currentLevel.entities[this.id.split("-")[0]][this.id.split("-")[1]] = null;
+        }
+    }
+    circle.drawTile = function (c, ctx) {
         this.cacheWidth = this.width;
         this.cacheHeight = this.height;;
         c.width = this.width * 2;
@@ -1306,12 +1351,14 @@ fg.Grower = {
 }
 
 fg.Save = function (id, type, x, y, cx, cy, index) {
-    return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
+    return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.Interactive, {
         animationIndex: 0,
+        tunning: 0,
+        defaultTunning: 180,
         drawTile: function (c, ctx) {
             var imageData = null;
             var data = null;
-            c.width = this.width*6;
+            c.width = this.width * 6;
             c.height = this.height;
             for (var index = 0; index <= 5; index++) {
                 var offSetX = this.width * index;
@@ -1344,6 +1391,11 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         update: function () {
             this.cacheX = this.animationIndex * this.width;
             this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
+        },
+        interact: function(entity){
+            if(entity.type == TYPE.ACTOR){
+
+            }
         }
     });
 }
@@ -1351,341 +1403,339 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
 fg.Sentry = function (id, type, x, y, cx, cy, index) {
     return fg.Game.currentLevel.applySettingsToEntity(
         Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
-        attached: false,
-        moving: true,
-        rotation: 0,
-        speedX: 0,
-        speedY: 0,
-        vectorList: [],
-        width: fg.System.defaultSide / 2,
-        height: fg.System.defaultSide / 2,
-        searchDepth: 1,
-        wait: 0,
-        aim: 0,
-        active: true,
-        curAngle: 0,
-        castAngle: 0,
-        maxAim: 120,
-        maxWait: 120,
-        currentEntities: [],
-        laserPoint: { x: 0, y: 0 },
-        actorBeams:[],
-        stationary: false,
-        drawTile: function (c, ctx) {
-            c.width = this.width;
-            c.height = this.height;
-            ctx.fillStyle = "#54A6BF";
-            ctx.arc(this.width / 2, this.height / 2, this.height / 2, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.strokeStyle = "#407B95";
-            ctx.stroke();
-            return c;
-        },
-        getVectors: function(entities){
-            this.vectorList = [];
-            for(var i = 0, entity; entity = entities[i];i++){
-                if(entity.id == this.id) continue;
-                if(!entity.vectors) {
-                    entity.vectors = [];
-                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
-                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
-                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
-                    entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
-                }
-                for(var k = 0; k < entity.vectors.length;k++)
-                    this.vectorList.push(entity.vectors[k]);
-            }
-        },
-        checkCollisions: function () {
-            var entities = fg.Game.searchArea(this.x + (this.width/2), this.y + (this.height/2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)));
-            for (var k = 0; k < 6; k++) {
-                if(k == 0)
-                    this.rotation -= 90;
-                else
-                    this.rotation += 90;
-                if (this.rotation < 0) this.rotation = 360 + this.rotation;
-                if (this.rotation == 360) this.rotation = 0;
-                this.addSpeed();
-                if(!this.resolveCollision(entities)) if(this.attached) return;
-            }
-        },
-        resolveCollision: function (ents) {
-            for (var i = 0, obj; obj = ents[i]; i++) {
-                if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
-                    if (this.speedX != 0) {
-                        if (this.speedX > 0)
-                            this.x = obj.x - this.width;
-                        else
-                            this.x = obj.x + obj.width;
-                    } else {
-                        if (this.speedY > 0)
-                            this.y = obj.y - this.height;
-                        else
-                            this.y = obj.y + obj.height;
-                    }
-                    this.attached = true;
-                    return true;
-                }
-            }
-            return false;
-        },
-        addSpeed: function () {
-            this.speedX = 0;
-            this.speedY = 0;
-            var vel = 0.03 * fg.Timer.deltaTime;
-            switch (this.rotation) {
-                case 0:
-                    this.speedX = vel;
-                    break;
-                case 90:
-                    this.speedY = vel;
-                    break;
-                case 180:
-                    this.speedX = -vel;
-                    break;
-                case 270:
-                    this.speedY = -vel;
-                    break;
-            }
-        },
-        searchArea: function(actor){
-            this.currentEntities = [];
-            var startCol = Math.floor(Math.min(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
-            var startRow = Math.floor(Math.min(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
-            var endCol = Math.ceil(Math.max(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
-            var endRow = Math.ceil(Math.max(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));            
-            var startRowIndex = startRow < 0 ? 0 : startRow;
-            var endRowIndex = endRow > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : endRow;
-            var startColIndex = startCol < 0 ? 0 : startCol;
-            var endColIndex = endCol > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : endCol;
-
-            for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
-                for (var k = startColIndex, obj; k <= endColIndex; k++) {
-                    var obj = fg.Game.currentLevel.entities[i][k];
-                    if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL || obj.vanished) continue;
-                    this.currentEntities.push(obj);
-                    if (obj.target && obj.target.segments)
-                        for (var index = 0, entity; entity = obj.target.segments[index]; index++)
-                            this.currentEntities.push(entity);
-                }
-            }         
-            if(!actor.vanished) this.currentEntities.push(actor);   
-        },
-        updateVectors: function (actor) {            
-            if(actor && !actor.vanished && this.aim < (this.maxAim * 0.8) && this.wait == 0) {
-                this.laserPoint.x = (actor.x + (actor.width / 2));
-                this.laserPoint.y = (actor.y + (actor.height / 2));
-            }
-            this.searchArea(actor);
-            this.getVectors(this.currentEntities);
-        },
-        laserFinalMoments: function(){
-            var count = 0;
-            var targetDistance = Math.sqrt(Math.pow((this.y + (this.height / 2)) - this.laserPoint.y, 2) + Math.pow((this.x + (this.width / 2)) - this.laserPoint.x, 2));
-            while(this.castRay(this.shootAngle) && targetDistance < (fg.System.canvas.width)) {                
-                this.laserPoint.x = this.laserPoint.x + Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
-                this.laserPoint.y = this.laserPoint.y + Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
-                this.updateVectors(fg.Game.actors[0]);
-                count++;
-                if(count > 40)
-                return;
-            }
-        },
-        search: function () {   
-            this.updateVectors(fg.Game.actors[0]);
-            if (this.wait == 0) {                
-                if (this.active) this.moving = true;
-                if (this.aim < (this.maxAim * 0.8)) {
-                    var segValue = 12;
-                    var searchAngle = 360 / segValue;                    
-                    this.curAngle = Math.round(Math.atan2((fg.Game.actors[0].y + (fg.Game.actors[0].height / 2)) - (this.y + (this.height / 2)), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + (this.width / 2))) * 180 / Math.PI) - (searchAngle/2);
-                    this.actorBeams = [];
-                    for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {                        
-                        this.castRay(i % 360);
-                        // if (!this.moving)
-                        //     break;
-                    }
-                    if(this.actorBeams.length > 0){ 
-                        var beam = this.actorBeams[Math.floor(this.actorBeams.length / 2)];
-                        this.aiming(beam.intersect);
-                        this.drawTargetCircle(beam.intersect);
-                        this.moving = false;
-                        this.shootAngle = beam.angle;
-                    }
-                    if (this.aim > 0) {
-                        var resultAngle = this.shootAngle - (searchAngle / 2);
-                        this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
-                    }
-                } else this.laserFinalMoments();
-
-                if (this.moving) this.aim = 0;
-            } else {
-                this.castRay(this.shootAngle);
-                this.wait--;
-            }
-        },
-        castRay: function (angle) {
-            var endCastX = Math.cos(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
-            var endCastY = Math.sin(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
-            var ray = {
-                a: { x: this.x + (this.width/2), y: this.y + (this.height/2) },
-                b: { x: this.x + endCastX, y: this.y + endCastY }
-            };
-            //debug
-            //this.drawLaser(ray.b);
-
-            // Find CLOSEST intersection
-            var closestIntersect = null;
-            for (var i = 0; i < this.vectorList.length; i++) {
-                var intersect = this.getIntersection(ray, this.vectorList[i]);
-                if (!intersect) continue;
-                if (!closestIntersect || intersect.param < closestIntersect.param) {
-                    closestIntersect = intersect;
-                }
-            }
-            var intersect = closestIntersect;
-
-            if (!intersect) return true;
-
-            //debug
-            //this.drawLaser(intersect);
-
-            if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) && intersect.param <= 3.75) {
-                if (this.aim < (this.maxAim * 0.8) && this.wait == 0)
-                    this.actorBeams.push({ angle: angle, intersect: intersect });
-                else {
-                    this.aiming(intersect);
-                    this.drawTargetCircle(intersect);
-                    this.moving = false;
-                    this.shootAngle = angle;
-                    return false;
-                }
-            }
-
-            return true;
-        },
-        aiming: function (intersect) {
-            var ctx = fg.System.context;
-            if (this.aim <= (this.maxAim * 0.8))
-                ctx.lineWidth = 1;
-            else
-                ctx.lineWidth = 2;
-
-            if (this.maxAim == this.aim || this.wait > 60) {
-                // Draw red laser
-                this.drawLaser(intersect);
-
-                if (this.wait == 0) this.wait = this.maxWait;
-
-                this.aim = 0;
-                if (intersect.type == TYPE.ACTOR) fg.Game.actors[0].life = 0;
-
-                if (intersect.type == TYPE.MARIO) {
-                    var objX = parseInt(intersect.id.split("-")[0]);
-                    var objY = parseInt(intersect.id.split("-")[1]);
-                    if (this.wait <= 61) {
-                        fg.Game.currentLevel.entities[objX][objY].vanished = 20000;
-                        this.vanish(intersect);
-                        if (fg.Game.currentLevel.entities[objX][objY].ID == "17-86")
-                            camera.fixed = false;
-                    }
-                }
-            }
-        },
-        drawTargetCircle: function (intersect) {
-            var ctx = fg.System.context;
-            ctx.strokeStyle = "#dd3838";
-            ctx.beginPath();
-            ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, 1, 0, 2 * Math.PI, false);
-            ctx.stroke();
-            if (this.maxAim != this.aim && this.wait == 0) {
-                ctx.beginPath();
-                ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, this.maxAim - this.aim, 0, 2 * Math.PI, false);
+            attached: false,
+            moving: true,
+            rotation: 0,
+            speedX: 0,
+            speedY: 0,
+            vectorList: [],
+            width: fg.System.defaultSide / 2,
+            height: fg.System.defaultSide / 2,
+            searchDepth: 1,
+            wait: 0,
+            aim: 0,
+            active: true,
+            curAngle: 0,
+            castAngle: 0,
+            maxAim: 120,
+            maxWait: 120,
+            currentEntities: [],
+            laserPoint: { x: 0, y: 0 },
+            actorBeams: [],
+            stationary: false,
+            drawTile: function (c, ctx) {
+                c.width = this.width;
+                c.height = this.height;
+                ctx.fillStyle = "#54A6BF";
+                ctx.arc(this.width / 2, this.height / 2, this.height / 2, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = "#407B95";
                 ctx.stroke();
-                this.aim++;
-            }
-        }, 
-        drawLaser: function (intersect) {
-            var ctx = fg.System.context;
-            // Draw red laser
-            ctx.save();
-            ctx.strokeStyle = "#dd3838";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(this.x - fg.Game.screenOffsetX + (this.width/2), this.y - fg.Game.screenOffsetY + (this.height/2));
-            ctx.lineTo(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY);
-            ctx.stroke();
-            ctx.restore();
-        },
-        vanish: function (intersect) {
-            var entities = fg.Game.currentLevel.entities;
-            var tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
-            var tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
-
-            var objX = parseInt(tempX);
-            var objY = parseInt(tempY);
-
-            if (entities[objX - 1][objY + 0] && entities[objX - 1][objY + 0].type == TYPE.MARIO) entities[objX - 1][objY + 0].tileSet = "";
-            if (entities[objX - 1][objY + 1] && entities[objX - 1][objY + 1].type == TYPE.MARIO) entities[objX - 1][objY + 1].tileSet = "";
-            if (entities[objX - 0][objY + 1] && entities[objX - 0][objY + 1].type == TYPE.MARIO) entities[objX - 0][objY + 1].tileSet = "";
-            if (entities[objX + 1][objY + 1] && entities[objX + 1][objY + 1].type == TYPE.MARIO) entities[objX + 1][objY + 1].tileSet = "";
-            if (entities[objX + 1][objY + 0] && entities[objX + 1][objY + 0].type == TYPE.MARIO) entities[objX + 1][objY + 0].tileSet = "";
-            if (entities[objX + 1][objY - 1] && entities[objX + 1][objY - 1].type == TYPE.MARIO) entities[objX + 1][objY - 1].tileSet = "";
-            if (entities[objX - 0][objY - 1] && entities[objX - 0][objY - 1].type == TYPE.MARIO) entities[objX - 0][objY - 1].tileSet = "";
-            if (entities[objX - 1][objY - 1] && entities[objX - 1][objY - 1].type == TYPE.MARIO) entities[objX - 1][objY - 1].tileSet = "";
-        },
-        getIntersection: function getIntersection(ray, vector) {
-            var r_px = ray.a.x;
-            var r_py = ray.a.y;
-            var r_dx = ray.b.x - ray.a.x;
-            var r_dy = ray.b.y - ray.a.y;
-            
-            var s_px = vector.a.x;
-            var s_py = vector.a.y;
-            var s_dx = vector.b.x - vector.a.x;
-            var s_dy = vector.b.y - vector.a.y;
-
-            // Are they parallel? If so, no intersect
-            /*if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;*/
-            if(r_dy == s_dy || r_dx == s_dx) return null;
-
-            // SOLVE FOR T1 & T2
-            var T2 = (r_dx * (s_py - r_py) + r_dy * (r_px - s_px)) / (s_dx * r_dy - s_dy * r_dx);
-            var T1 = (s_px + s_dx * T2 - r_px) / r_dx;
-
-            if (isNaN(T1)) T1 = (s_py + s_dy * T2 - r_py) / r_dy;
-
-            // Must be within parametic whatevers for RAY/SEGMENT
-            if (T1 < 0) return null;
-            if (T2 < 0 || T2 > 1) return null;
-
-            // Return the POINT OF INTERSECTION
-            return {
-                x: r_px + r_dx * T1,
-                y: r_py + r_dy * T1,
-                param: T1,
-                type: vector.type,
-                id: vector.id
-            };
-        },
-        update: function () {            
-            if (this.moving && !this.stationary) {
-                this.checkCollisions();
+                return c;
+            },
+            getVectors: function (entities) {
+                this.vectorList = [];
+                for (var i = 0, entity; entity = entities[i]; i++) {
+                    if (entity.id == this.id) continue;
+                    if (!entity.vectors) {
+                        entity.vectors = [];
+                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
+                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
+                    }
+                    for (var k = 0; k < entity.vectors.length; k++)
+                        this.vectorList.push(entity.vectors[k]);
+                }
+            },
+            checkCollisions: function () {
+                var entities = fg.Game.searchArea(this.x + (this.width / 2), this.y + (this.height / 2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)));
+                for (var k = 0; k < 6; k++) {
+                    if (k == 0)
+                        this.rotation -= 90;
+                    else
+                        this.rotation += 90;
+                    if (this.rotation < 0) this.rotation = 360 + this.rotation;
+                    if (this.rotation == 360) this.rotation = 0;
+                    this.addSpeed();
+                    if (!this.resolveCollision(entities)) if (this.attached) return;
+                }
+            },
+            resolveCollision: function (ents) {
+                for (var i = 0, obj; obj = ents[i]; i++) {
+                    if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
+                        if (this.speedX != 0) {
+                            if (this.speedX > 0)
+                                this.x = obj.x - this.width;
+                            else
+                                this.x = obj.x + obj.width;
+                        } else {
+                            if (this.speedY > 0)
+                                this.y = obj.y - this.height;
+                            else
+                                this.y = obj.y + obj.height;
+                        }
+                        this.attached = true;
+                        return true;
+                    }
+                }
+                return false;
+            },
+            addSpeed: function () {
+                this.speedX = 0;
+                this.speedY = 0;
+                var vel = 0.03 * fg.Timer.deltaTime;
                 switch (this.rotation) {
                     case 0:
-                    case 180:
-                        this.x += this.speedX
+                        this.speedX = vel;
                         break;
                     case 90:
+                        this.speedY = vel;
+                        break;
+                    case 180:
+                        this.speedX = -vel;
+                        break;
                     case 270:
-                        this.y += this.speedY;
+                        this.speedY = -vel;
                         break;
                 }
-            } 
-            this.search();
-        }
-    }));
-} 
+            },
+            searchArea: function (actor) {
+                this.currentEntities = [];
+                var startCol = Math.floor(Math.min(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
+                var startRow = Math.floor(Math.min(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
+                var endCol = Math.ceil(Math.max(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
+                var endRow = Math.ceil(Math.max(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
+                var startRowIndex = startRow < 0 ? 0 : startRow;
+                var endRowIndex = endRow > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : endRow;
+                var startColIndex = startCol < 0 ? 0 : startCol;
+                var endColIndex = endCol > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : endCol;
+
+                for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
+                    for (var k = startColIndex, obj; k <= endColIndex; k++) {
+                        var obj = fg.Game.currentLevel.entities[i][k];
+                        if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL || obj.vanished) continue;
+                        this.currentEntities.push(obj);
+                        if (obj.target && obj.target.segments)
+                            for (var index = 0, entity; entity = obj.target.segments[index]; index++)
+                                this.currentEntities.push(entity);
+                    }
+                }
+                if (!actor.vanished) this.currentEntities.push(actor);
+            },
+            updateVectors: function (actor) {
+                if (actor && !actor.vanished && this.aim < (this.maxAim * 0.8) && this.wait == 0) {
+                    this.laserPoint.x = (actor.x + (actor.width / 2));
+                    this.laserPoint.y = (actor.y + (actor.height / 2));
+                }
+                this.searchArea(actor);
+                this.getVectors(this.currentEntities);
+            },
+            laserFinalMoments: function () {
+                var count = 0;
+                var targetDistance = Math.sqrt(Math.pow((this.y + (this.height / 2)) - this.laserPoint.y, 2) + Math.pow((this.x + (this.width / 2)) - this.laserPoint.x, 2));
+                while (this.castRay(this.shootAngle) && targetDistance < (fg.System.canvas.width)) {
+                    this.laserPoint.x = this.laserPoint.x + Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+                    this.laserPoint.y = this.laserPoint.y + Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+                    this.updateVectors(fg.Game.actors[0]);
+                    count++;
+                    if (count > 40)
+                        return;
+                }
+            },
+            search: function () {
+                this.updateVectors(fg.Game.actors[0]);
+                if (this.wait == 0) {
+                    if (this.active) this.moving = true;
+                    if (this.aim < (this.maxAim * 0.8)) {
+                        var segValue = 12;
+                        var searchAngle = 360 / segValue;
+                        this.curAngle = Math.round(Math.atan2((fg.Game.actors[0].y + (fg.Game.actors[0].height / 2)) - (this.y + (this.height / 2)), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + (this.width / 2))) * 180 / Math.PI) - (searchAngle / 2);
+                        this.actorBeams = [];
+                        for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {
+                            this.castRay(i % 360);
+                        }
+                        if (this.actorBeams.length > 0) {
+                            var beam = this.actorBeams[Math.floor(this.actorBeams.length / 2)];
+                            this.aiming(beam.intersect);
+                            this.drawTargetCircle(beam.intersect);
+                            this.moving = false;
+                            this.shootAngle = beam.angle;
+                        }
+                        if (this.aim > 0) {
+                            var resultAngle = this.shootAngle - (searchAngle / 2);
+                            this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
+                        }
+                    } else this.laserFinalMoments();
+
+                    if (this.moving) this.aim = 0;
+                } else {
+                    this.castRay(this.shootAngle);
+                    this.wait--;
+                }
+            },
+            castRay: function (angle) {
+                var endCastX = Math.cos(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
+                var endCastY = Math.sin(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
+                var ray = {
+                    a: { x: this.x + (this.width / 2), y: this.y + (this.height / 2) },
+                    b: { x: this.x + endCastX, y: this.y + endCastY }
+                };
+                //debug
+                //this.drawLaser(ray.b);
+
+                // Find CLOSEST intersection
+                var closestIntersect = null;
+                for (var i = 0; i < this.vectorList.length; i++) {
+                    var intersect = this.getIntersection(ray, this.vectorList[i]);
+                    if (!intersect) continue;
+                    if (!closestIntersect || intersect.param < closestIntersect.param) {
+                        closestIntersect = intersect;
+                    }
+                }
+                var intersect = closestIntersect;
+
+                if (!intersect) return true;
+
+                //debug
+                //this.drawLaser(intersect);
+
+                if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) && intersect.param <= 3.75) {
+                    if (this.aim < (this.maxAim * 0.8) && this.wait == 0)
+                        this.actorBeams.push({ angle: angle, intersect: intersect });
+                    else {
+                        this.aiming(intersect);
+                        this.drawTargetCircle(intersect);
+                        this.moving = false;
+                        this.shootAngle = angle;
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+            aiming: function (intersect) {
+                var ctx = fg.System.context;
+                if (this.aim <= (this.maxAim * 0.8))
+                    ctx.lineWidth = 1;
+                else
+                    ctx.lineWidth = 2;
+
+                if (this.maxAim == this.aim || this.wait > 60) {
+                    // Draw red laser
+                    this.drawLaser(intersect);
+
+                    if (this.wait == 0) this.wait = this.maxWait;
+
+                    this.aim = 0;
+                    if (intersect.type == TYPE.ACTOR) fg.Game.actors[0].life = 0;
+
+                    if (intersect.type == TYPE.MARIO) {
+                        var objX = parseInt(intersect.id.split("-")[0]);
+                        var objY = parseInt(intersect.id.split("-")[1]);
+                        if (this.wait <= 61) {
+                            fg.Game.currentLevel.entities[objX][objY].vanished = 20000;
+                            this.vanish(intersect);
+                            if (fg.Game.currentLevel.entities[objX][objY].ID == "17-86")
+                                camera.fixed = false;
+                        }
+                    }
+                }
+            },
+            drawTargetCircle: function (intersect) {
+                var ctx = fg.System.context;
+                ctx.strokeStyle = "#dd3838";
+                ctx.beginPath();
+                ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, 1, 0, 2 * Math.PI, false);
+                ctx.stroke();
+                if (this.maxAim != this.aim && this.wait == 0) {
+                    ctx.beginPath();
+                    ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, this.maxAim - this.aim, 0, 2 * Math.PI, false);
+                    ctx.stroke();
+                    this.aim++;
+                }
+            },
+            drawLaser: function (intersect) {
+                var ctx = fg.System.context;
+                // Draw red laser
+                ctx.save();
+                ctx.strokeStyle = "#dd3838";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(this.x - fg.Game.screenOffsetX + (this.width / 2), this.y - fg.Game.screenOffsetY + (this.height / 2));
+                ctx.lineTo(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY);
+                ctx.stroke();
+                ctx.restore();
+            },
+            vanish: function (intersect) {
+                var entities = fg.Game.currentLevel.entities;
+                var tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
+                var tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
+
+                var objX = parseInt(tempX);
+                var objY = parseInt(tempY);
+
+                if (entities[objX - 1][objY + 0] && entities[objX - 1][objY + 0].type == TYPE.MARIO) entities[objX - 1][objY + 0].tileSet = "";
+                if (entities[objX - 1][objY + 1] && entities[objX - 1][objY + 1].type == TYPE.MARIO) entities[objX - 1][objY + 1].tileSet = "";
+                if (entities[objX - 0][objY + 1] && entities[objX - 0][objY + 1].type == TYPE.MARIO) entities[objX - 0][objY + 1].tileSet = "";
+                if (entities[objX + 1][objY + 1] && entities[objX + 1][objY + 1].type == TYPE.MARIO) entities[objX + 1][objY + 1].tileSet = "";
+                if (entities[objX + 1][objY + 0] && entities[objX + 1][objY + 0].type == TYPE.MARIO) entities[objX + 1][objY + 0].tileSet = "";
+                if (entities[objX + 1][objY - 1] && entities[objX + 1][objY - 1].type == TYPE.MARIO) entities[objX + 1][objY - 1].tileSet = "";
+                if (entities[objX - 0][objY - 1] && entities[objX - 0][objY - 1].type == TYPE.MARIO) entities[objX - 0][objY - 1].tileSet = "";
+                if (entities[objX - 1][objY - 1] && entities[objX - 1][objY - 1].type == TYPE.MARIO) entities[objX - 1][objY - 1].tileSet = "";
+            },
+            getIntersection: function getIntersection(ray, vector) {
+                var r_px = ray.a.x;
+                var r_py = ray.a.y;
+                var r_dx = ray.b.x - ray.a.x;
+                var r_dy = ray.b.y - ray.a.y;
+
+                var s_px = vector.a.x;
+                var s_py = vector.a.y;
+                var s_dx = vector.b.x - vector.a.x;
+                var s_dy = vector.b.y - vector.a.y;
+
+                // Are they parallel? If so, no intersect
+                /*if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;*/
+                if (r_dy == s_dy || r_dx == s_dx) return null;
+
+                // SOLVE FOR T1 & T2
+                var T2 = (r_dx * (s_py - r_py) + r_dy * (r_px - s_px)) / (s_dx * r_dy - s_dy * r_dx);
+                var T1 = (s_px + s_dx * T2 - r_px) / r_dx;
+
+                if (isNaN(T1)) T1 = (s_py + s_dy * T2 - r_py) / r_dy;
+
+                // Must be within parametic whatevers for RAY/SEGMENT
+                if (T1 < 0) return null;
+                if (T2 < 0 || T2 > 1) return null;
+
+                // Return the POINT OF INTERSECTION
+                return {
+                    x: r_px + r_dx * T1,
+                    y: r_py + r_dy * T1,
+                    param: T1,
+                    type: vector.type,
+                    id: vector.id
+                };
+            },
+            update: function () {
+                if (this.moving && !this.stationary) {
+                    this.checkCollisions();
+                    switch (this.rotation) {
+                        case 0:
+                        case 180:
+                            this.x += this.speedX
+                            break;
+                        case 90:
+                        case 270:
+                            this.y += this.speedY;
+                            break;
+                    }
+                }
+                this.search();
+            }
+        }));
+}
 
 fg.Slope = function (id, type, x, y, cx, cy, index) {
     var slope = Object.create(fg.protoEntity);
@@ -1768,15 +1818,15 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
     crate.cacheWidth = crate.width;
     crate.cacheHeight = crate.height;
     crate.drawTile = function (c, ctx) {
-        c.width = this.width * 2;
-        c.height = this.height;
+        c.width = fg.System.defaultSide / 2;
+        c.height = fg.System.defaultSide / 2;
 
         ctx.fillStyle = "rgb(110,50,25)";
-        ctx.fillRect(0, 0, this.width, this.height);
+        ctx.fillRect(0, 0, c.width, c.height);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.strokeStyle = "rgb(205,153,69)";
-        ctx.rect(1.5, 1.5, (this.width) - 3, (this.height) - 3);
+        ctx.rect(1.5, 1.5, (c.width) - 3, (c.height) - 3);
         ctx.stroke();
         ctx.fillStyle = "rgb(150,79,15)";
         ctx.fillRect(3, 3, 7, 7);
@@ -1784,7 +1834,7 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
         ctx.fillRect(3, 4, 7, 1);
         ctx.fillRect(3, 6, 7, 1);
         ctx.fillRect(3, 8, 7, 1);
-        ctx.fillRect(this.width, 0, this.width, this.height);
+        ctx.fillRect(c.width, 0, c.width, c.height);
 
         return c;
     };
@@ -1821,7 +1871,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
         ctx.fillRect(this.width, 0, this.width, this.height);
         return c;
     };
-    actor.explode = function() {
+    actor.explode = function () {
         var divider = 4;
         for (var i = 0; i < this.width / divider; i++) {
             for (var k = 0; k < this.height / divider; k++) {
@@ -1840,30 +1890,30 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
         this.vanished = true;
         this.respawn = 240;
     },
-    actor.drawSegments = function () {
-        for (var i = 0, segment; segment = this.segments[i]; i++)
-            fg.Game.foreGroundEntities.push(segment);
-    };
+        actor.drawSegments = function () {
+            for (var i = 0, segment; segment = this.segments[i]; i++)
+                fg.Game.foreGroundEntities.push(segment);
+        };
     actor.checkDeath = function () {
         if (this.life == 0) {
             if (this.segments.length == 0) this.explode();
             this.drawSegments();
             fg.Camera.following = this.segments[0];
-            if (this.respawn > 0) 
+            if (this.respawn > 0)
                 this.respawn--;
             else {
                 this.segments = [];
                 this.life = 100;
                 this.vanished = undefined;
                 fg.Camera.following = this;
-                fg.Game.warp(this,{ x: (parseInt(this.lastCheckPoint.id.split("-")[0]) - 1), y: parseInt(this.lastCheckPoint.id.split("-")[1]) });
+                fg.Game.warp(this, { x: (parseInt(this.lastCheckPoint.id.split("-")[0]) - 1), y: parseInt(this.lastCheckPoint.id.split("-")[1]) });
             }
-            return  true;
+            return true;
         }
         return false;
     };
     actor.update = function () {
-        if(actor.checkDeath()) return;
+        if (actor.checkDeath()) return;
         this.soilFriction = 0.25;
         if (fg.Input.actions["jump"]) {
             if (this.canJump) {
@@ -1888,7 +1938,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
         if (this.wallJump && !this.grounded && this.speedY > 0) {
             if ((fg.Input.actions["left"] || fg.Input.actions["right"]) && this.speedX == 0) {
                 this.wallSliding = true;
-                if(!fg.Input.actions["jump"]) this.canJump = true;
+                if (!fg.Input.actions["jump"]) this.canJump = true;
                 this.speedY = 0.082;
             }
         }
@@ -1918,7 +1968,7 @@ fg.Game =
         paused: false,
         lastPauseState: undefined,
         started: false,
-        title: { fadeIn: false, blinkText: 0 },
+        fontAnimation: { fadeIn: false, blinkText: 0 },
         loadLevel: function (name) {
             this.levels.push(fg.Level(name));
             return this.levels[this.levels.length - 1];
@@ -1938,13 +1988,14 @@ fg.Game =
                 fg.Input.bindTouch(fg.$("#btnMoveLeft"), "left");
                 fg.Input.bindTouch(fg.$("#btnMoveRight"), "right");
                 fg.Input.bindTouch(fg.$("#btnJump"), "jump");
+                fg.Input.bindTouch(fg.$("#main"), "esc");
             }
             this.run();
         },
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 67, fg.System.defaultSide * 14, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 168, fg.System.defaultSide * 228, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -1980,6 +2031,46 @@ fg.Game =
                 fg.System.context.fillText("Loading...", x, y);
             }
         },
+        loadState: function(){
+            //Load State
+            if (localStorage.fallingSaveState != undefined) {
+                var saveState = JSON.parse(localStorage.fallingSaveState);
+
+                var posX = saveState.startPosition.x;
+                var posY = saveState.startPosition.y;
+
+                fg.Game.actors[0].x = (posY * fg.System.defaultSide) + fg.Game.actors[0].width / 2;
+                fg.Game.actors[0].y = (posX * fg.System.defaultSide) + fg.Game.actors[0].height / 2;
+
+                fg.Game.actors[0].glove = saveState.powerUps.glove;
+                fg.Game.actors[0].light = saveState.powerUps.light;
+                fg.Game.actors[0].wallJump = saveState.powerUps.wallJump;
+                fg.Game.actors[0].superJump = saveState.powerUps.superJump;
+                fg.Game.actors[0].velocity = saveState.powerUps.velocity;
+            }
+        },
+        saveState: function (obj, actor) {
+            var oldSaveState = localStorage.FallingSaveState ? JSON.parse(localStorage.FallingSaveState) : null;
+            var saveStations = oldSaveState && oldSaveState.saveStations ? oldSaveState.saveStations : [];
+
+            if (!saveStations.find(function (e) { return e.id == obj.id })) {
+                saveStations.push({ id: obj.id, screen: obj.screen, date: new Date() });
+            }
+
+            var saveState = {
+                startPosition: { x: obj.id.split('-')[0], y: obj.id.split('-')[1] },
+                powerUps: {
+                    glove: actor.glove,
+                    light: actor.light,
+                    wallJump: actor.wallJump,
+                    superJump: actor.superJump,
+                    velocity: actor.velocity
+                },
+                screen: { src: obj.screen.src },
+                saveStations: saveStations
+            };
+            localStorage.fallingSaveState = JSON.stringify(saveState);
+        },
         update: function () {
             if (fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) {
                 this.paused = !this.paused
@@ -1994,21 +2085,23 @@ fg.Game =
                     this.updateEntity);
                 for (var index = 0, entity; entity = this.actors[index]; index++)
                     this.updateEntity(entity);
-                for (var index = this.foreGroundEntities.length - 1, entity; entity = this.foreGroundEntities[index]; index--){
-                    if(entity.type != TYPE.SWITCH) entity.update();
-                    entity.draw(true);                    
+                for (var index = this.foreGroundEntities.length - 1, entity; entity = this.foreGroundEntities[index]; index--) {
+                    if (entity.type != TYPE.SWITCH) entity.update();
+                    entity.draw(true);
                 }
                 fg.Camera.update();
             } else {
-
+                fg.System.context.fillStyle = "black";
+                fg.System.context.fillRect((fg.System.canvas.width / 2) - 16, 170, 44, 12)
+                this.drawFont("PAUSED", "", (fg.System.canvas.width / 2) - 12, 180);
             }
         },
         warp: function (entity, checkPoint) {
             var x = checkPoint ? checkPoint.x : 0;//warpx.value;
             var y = checkPoint ? checkPoint.y : 0;//warpy.value;
             if (x != "" && y != "") {
-                entity.y = (x * fg.System.defaultSide) + entity.height/2;
-                entity.x = (y * fg.System.defaultSide) + entity.height/2;
+                entity.y = (x * fg.System.defaultSide) + entity.height / 2;
+                entity.x = (y * fg.System.defaultSide) + entity.height / 2;
                 fg.Camera.fixed = false;
             }
         },
@@ -2048,7 +2141,7 @@ fg.Game =
             return this.currentEntities;
         },
         testOverlap: function (a, b) {
-            if (a.id == b.id || !b.collidable || b.vanished) return false;
+            if (a.id == b.id || b.vanished) return false;
             if (a.x > b.x + b.width || a.x + a.width < b.x) return false;
             if (a.x < b.x + b.width &&
                 a.x + a.width > b.x &&
@@ -2135,22 +2228,25 @@ fg.Game =
             ctx.lineTo(20 + 230, 20 + 90);
 
             ctx.stroke();
-            if (fg.Game.title.fadeIn)
-                fg.Game.title.blinkText += 1;
-            else
-                fg.Game.title.blinkText -= 1;
 
-            if (fg.Game.title.blinkText >= 100) fg.Game.title.fadeIn = false;
-
-            if (fg.Game.title.blinkText <= 0) fg.Game.title.fadeIn = true;
-
-            ctx.font = "10px Arial";
-            ctx.fillStyle = "rgba(255,255,255," + fg.Game.title.blinkText / 100 + ")";
-            ctx.fillText("Press any key...", 120, 180);
-
+            this.drawFont("Press space...","",120,180);
             /*if (tracks[0].paused) {
                 tracks[0].play();
             }*/
+        },
+        drawFont:function(text,color,x,y){
+            if (fg.Game.fontAnimation.fadeIn)
+                fg.Game.fontAnimation.blinkText += 1;
+            else
+                fg.Game.fontAnimation.blinkText -= 1;
+
+            if (fg.Game.fontAnimation.blinkText >= 100) fg.Game.fontAnimation.fadeIn = false;
+
+            if (fg.Game.fontAnimation.blinkText <= 0) fg.Game.fontAnimation.fadeIn = true;
+
+            fg.System.context.font = "10px Arial";
+            fg.System.context.fillStyle = "rgba(255,255,255," + fg.Game.fontAnimation.blinkText / 100 + ")";
+            fg.System.context.fillText(text, x, y);
         },
         drawBackGround: function () {
             var bgSize = 4;
@@ -2264,7 +2360,7 @@ fg.Timer = {
         this.currentTime = d.getTime();
         if (!this.lastTime)
             this.lastTime = this.currentTime - 15;
-        if (this.showFPS) {
+        if (this.showFPS && !fg.Game.paused) {
             this.totalTime += Math.round(1000 / ((this.currentTime - this.lastTime)));
             if (this.ticks % 50 == 0) {
                 this.fps = this.totalTime / 50;
