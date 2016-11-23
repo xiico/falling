@@ -1348,9 +1348,20 @@ fg.Grower = {
 fg.Save = function (id, type, x, y, cx, cy, index) {
     return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.Interactive, {
         animationIndex: 0,
-        tunning: 0,
-        defaultTunning: 180,
+        tuning: 0,
+        maxTuning: 300,
+        screen: undefined,
+        screenCanvas: fg.$new("canvas"),
+        screenContext: null,
+        drawScreen: function () {
+            //this.screenContext.drawImage(fg.Render.cached[this.type], 0, 0, this.width, this.height,0, 0, this.width, this.height);
+            fg.Render.cached[this.type].getContext('2d').drawImage(fg.System.canvas, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
+            this.screen = fg.System.canvas.toDataURL("image/png");
+        },
         drawTile: function (c, ctx) {
+            this.screenCanvas.width = fg.System.defaultSide;
+            this.screenCanvas.height = fg.System.defaultSide;
+            this.screenContext = this.screenCanvas.getContext('2d');
             var imageData = null;
             var data = null;
             c.width = this.width * 6;
@@ -1384,10 +1395,31 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
             return c;
         },
         update: function () {
-            this.cacheX = this.animationIndex * this.width;
             this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
+            this.cacheX = this.animationIndex * this.width;
+            fg.Game.saving = false;
+            if (!this.interacting) {
+                this.tuning = 0;
+            } else {
+                if (!this.screen) this.drawScreen();
+                if (this.tuning < this.maxTuning) {
+                    this.tuning++;
+                    if (this.tuning == this.maxTuning) {
+                        fg.Game.saving = true;
+                        fg.Game.paused = true;
+                    }
+                }
+                if (this.tuning / 60 >= this.animationIndex) this.cacheX = 0;
+            }
             fg.Interactive.update.call(this);
-        }
+        }/*,
+        draw: function (foreGround){
+            if(this.interacting)
+                fg.Render.draw(this.drawScreen(), this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
+            else
+                fg.protoEntity.draw.call(this, foreGround);
+            fg.Interactive.update.call(this);
+        }*/
     });
 }
 
@@ -1402,6 +1434,8 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
             vectorList: [],
             width: fg.System.defaultSide / 2,
             height: fg.System.defaultSide / 2,
+            cacheWidth: fg.System.defaultSide / 2,
+            cacheHeight: fg.System.defaultSide / 2,
             searchDepth: 1,
             wait: 0,
             aim: 0,
@@ -1959,6 +1993,9 @@ fg.Game =
         paused: false,
         lastPauseState: undefined,
         started: false,
+        saving: false,
+        saveScreenAnimation: 0,
+        maxSaveScreenAnimation: 30,
         fontAnimation: { fadeIn: false, blinkText: 0 },
         loadLevel: function (name) {
             this.levels.push(fg.Level(name));
@@ -2007,7 +2044,7 @@ fg.Game =
             requestAnimationFrame(fg.Game.run);
         },
         clearScreen: function () {
-            fg.System.context.fillStyle = "rgb(55,55,72)";//"rgb(55,55,72)";// "deepSkyBlue";
+            fg.System.context.fillStyle = fg.System.platform.mobile ? "deepSkyBlue" : "rgb(55,55,72)";
             fg.System.context.fillRect(0, 0, fg.System.canvas.width, fg.System.canvas.height);
         },
         drawLoading: function (x, y, width, height, pos) {
@@ -2063,10 +2100,8 @@ fg.Game =
             localStorage.fallingSaveState = JSON.stringify(saveState);
         },
         update: function () {
-            if (fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) {
-                this.paused = !this.paused
-            }
-            this.lastPauseState = fg.Input.actions["esc"];
+            if ((fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) && !this.saving) this.paused = !this.paused;
+            this.lastPauseState = fg.Input.actions["esc"];            
             if (!this.paused) {
                 this.clearScreen();
                 this.foreGroundEntities = [];
@@ -2081,11 +2116,26 @@ fg.Game =
                     entity.draw(true);
                 }
                 fg.Camera.update();
+                this.saveScreenAnimation = 0;
             } else {
-                fg.System.context.fillStyle = "black";
-                fg.System.context.fillRect((fg.System.canvas.width / 2) - 16, 170, 44, 12)
-                this.drawFont("PAUSED", "", (fg.System.canvas.width / 2) - 12, 180);
+                if (!this.saving) {
+                    fg.System.context.fillStyle = "black";
+                    fg.System.context.fillRect((fg.System.canvas.width / 2) - 16, 170, 44, 12)
+                    this.drawFont("PAUSED", "", (fg.System.canvas.width / 2) - 12, 180);
+                } else {
+                    this.showSaveScreen();
+                    if(fg.Input.actions["esc"]) {
+                        this.paused = false;
+                        this.saving = false;
+                        this.saveScreenAnimation = 0;
+                    }
+                }
             }
+        },
+        showSaveScreen: function(){
+            if(this.saveScreenAnimation < this.maxSaveScreenAnimation) this.saveScreenAnimation++;
+            fg.System.context.fillStyle = "black";
+            fg.System.context.fillRect(((fg.System.canvas.width / 2)) - (10 * this.saveScreenAnimation / 2), ((fg.System.canvas.height / 2)) - (5 * this.saveScreenAnimation / 2), 10 * this.saveScreenAnimation, 5 * this.saveScreenAnimation);
         },
         warp: function (entity, checkPoint) {
             var x = checkPoint ? checkPoint.x : 0;//warpx.value;
