@@ -1,0 +1,16 @@
+{
+  "name": "falling",
+  "short_name": "falling",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "A simple tile based side scroller.",
+  "icons": [{
+    "src": "img/ico.png",
+    "sizes": "64x64",
+    "type": "image/png"
+  }],
+  "related_applications": [{
+    "platform": "web"
+  }]
+}

@@ -1994,8 +1994,6 @@ fg.Game =
         lastPauseState: undefined,
         started: false,
         saving: false,
-        saveScreenAnimation: 0,
-        maxSaveScreenAnimation: 30,
         fontAnimation: { fadeIn: false, blinkText: 0 },
         loadLevel: function (name) {
             this.levels.push(fg.Level(name));
@@ -2003,6 +2001,7 @@ fg.Game =
         },
         start: function () {
             fg.System.init();
+            fg.UI.init();
             this.currentLevel = this.loadLevel("levelOne");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
@@ -2120,22 +2119,13 @@ fg.Game =
             } else {
                 if (!this.saving) {
                     fg.System.context.fillStyle = "black";
-                    fg.System.context.fillRect((fg.System.canvas.width / 2) - 16, 170, 44, 12)
+                    fg.System.context.fillRect((fg.System.canvas.width / 2) - 16, 170, 46, 12)
                     this.drawFont("PAUSED", "", (fg.System.canvas.width / 2) - 12, 180);
                 } else {
-                    this.showSaveScreen();
-                    if(fg.Input.actions["esc"]) {
-                        this.paused = false;
-                        this.saving = false;
-                        this.saveScreenAnimation = 0;
-                    }
+                    fg.UI.update();
+                    fg.UI.draw();
                 }
             }
-        },
-        showSaveScreen: function(){
-            if(this.saveScreenAnimation < this.maxSaveScreenAnimation) this.saveScreenAnimation++;
-            fg.System.context.fillStyle = "black";
-            fg.System.context.fillRect(((fg.System.canvas.width / 2)) - (10 * this.saveScreenAnimation / 2), ((fg.System.canvas.height / 2)) - (5 * this.saveScreenAnimation / 2), 10 * this.saveScreenAnimation, 5 * this.saveScreenAnimation);
         },
         warp: function (entity, checkPoint) {
             var x = checkPoint ? checkPoint.x : 0;//warpx.value;
@@ -2321,6 +2311,100 @@ fg.Game =
         }
     }
 
+fg.UI = {
+    init: function() {
+        this.mainContainer = Object.assign(Object.create(this.control),this.container); 
+        this.mainContainer.animate = true;
+        this.mainContainer.width = 100;
+        this.mainContainer.height = 80;
+        this.mainContainer.x = (fg.System.canvas.width / 2) - (this.mainContainer.width / 2);
+        this.mainContainer.y = (fg.System.canvas.height / 2) - (this.mainContainer.height / 2);
+    },
+    mainContainer: undefined,
+    container: {
+        align: "center",
+        direction: "vertical",
+        draw: function () {
+            var fractionX = this.width / this.maxAnimation;
+            var fractionY = this.height / this.maxAnimation;
+            var width = (fractionX * this.curAnimation);
+            var height = (fractionY * this.curAnimation);
+            fg.System.context.fillStyle = this.fillColor;
+            fg.System.context.strokeStyle = this.borderColor;
+            fg.System.context.beginPath();
+            //fg.System.context.fillRect(this.x + (this.width - (fractionX * this.curAnimation)), this.y + (this.height - (fractionY * this.curAnimation)), (this.width - (fractionX * this.curAnimation)), (this.height - (fractionY * this.curAnimation)));
+            fg.System.context.rect(this.x + ((this.width/2) - (width/2)), this.y + ((this.height/2) - (height/2)), width, height);
+            fg.System.context.fill();            
+
+            if (this.curAnimation < this.maxAnimation)
+                this.curAnimation++;
+            else {
+                for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.draw();
+                if(this.showBorder) fg.System.context.stroke();
+            }
+        },
+        update: function () {
+            for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.update();
+        },
+        addControl: function(obj){
+            var _ctrl = fg.UI.control.addControl.call(this, obj)
+            if(this.align == "center"){
+                if(this.direction == "vertical") {
+                    var totalHeight = 0;
+                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) totalHeight += ctrl.height; 
+                }
+            }
+        },
+    },
+    draw: function () {
+        this.mainContainer.draw();
+    },
+    infoBox: {},
+    button: {},
+    control: {
+        showBorder: true,
+        animate: false,
+        curAnimation: 0,
+        maxAnimation: 30,
+        fillColor: "black",
+        borderColor: "grey",        
+        index: 0,
+        selected: false,
+        highlighted: false,
+        x: 0,
+        y: 0,
+        width: 20,
+        height: 10,
+        positionRelative: true,
+        draw: function(){
+            var startX = this.positionRelative ? this.parent.x : 0;
+            var startY = this.positionRelative ? this.parent.y : 0;
+            fg.System.context.beginPath();
+            fg.System.context.fillStyle = this.fillColor;
+            fg.fillRect(startX + this.x, startY + this.y, this.width, this.height);
+            fg.System.context.strokeStyle = this.borderColor;
+            fg.System.context.stroke();
+        },
+        parent: null,
+        controls: [],
+        addControl: function(obj) {
+            obj.parent = this;
+            this.controls.push(obj);
+            return obj;
+        },
+        reset: function(){
+            this.curAnimation = 0;
+        }
+    },
+    update: function () {
+        if (fg.Input.actions["esc"]) {
+            fg.Game.paused = false;
+            fg.Game.saving = false;
+            this.mainContainer.reset();
+        }
+    }
+}
+
 fg.Render = {
     marioCache: {},
     cached: {},
@@ -2401,7 +2485,7 @@ fg.Timer = {
         this.currentTime = d.getTime();
         if (!this.lastTime)
             this.lastTime = this.currentTime - 15;
-        if (this.showFPS && !fg.Game.paused) {
+        if (this.showFPS) {
             this.totalTime += Math.round(1000 / ((this.currentTime - this.lastTime)));
             if (this.ticks % 50 == 0) {
                 this.fps = this.totalTime / 50;
@@ -2409,6 +2493,10 @@ fg.Timer = {
             }
 
             fg.System.context.font = "10px Arial";
+            if(fg.Game.paused) {
+                fg.System.context.fillStyle = "black";
+                fg.System.context.fillRect(9, 1, 30, 10);
+            }
             fg.System.context.fillStyle = "white";
             fg.System.context.fillText(this.fps, 10, 10);
         }
