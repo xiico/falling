@@ -2313,12 +2313,15 @@ fg.Game =
 
 fg.UI = {
     init: function() {
-        this.mainContainer = Object.assign(Object.create(this.control),this.container); 
-        this.mainContainer.animate = true;
-        this.mainContainer.width = 100;
-        this.mainContainer.height = 80;
-        this.mainContainer.x = (fg.System.canvas.width / 2) - (this.mainContainer.width / 2);
-        this.mainContainer.y = (fg.System.canvas.height / 2) - (this.mainContainer.height / 2);
+        this.mainContainer = Object.assign(Object.create(this.control),this.container , {
+            active: true,
+            animate: true,
+            width: 100,
+            height: 80,
+            x: (fg.System.canvas.width / 2) - (100 / 2),
+            y: (fg.System.canvas.height / 2) - (80 / 2)}); 
+        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {text:"SAVE", highlighted: true}));
+        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {text:"LOAD"}));
     },
     mainContainer: undefined,
     container: {
@@ -2330,17 +2333,12 @@ fg.UI = {
             var width = (fractionX * this.curAnimation);
             var height = (fractionY * this.curAnimation);
             fg.System.context.fillStyle = this.fillColor;
-            fg.System.context.strokeStyle = this.borderColor;
-            fg.System.context.beginPath();
-            //fg.System.context.fillRect(this.x + (this.width - (fractionX * this.curAnimation)), this.y + (this.height - (fractionY * this.curAnimation)), (this.width - (fractionX * this.curAnimation)), (this.height - (fractionY * this.curAnimation)));
-            fg.System.context.rect(this.x + ((this.width/2) - (width/2)), this.y + ((this.height/2) - (height/2)), width, height);
-            fg.System.context.fill();            
+            fg.System.context.fillRect(this.x + ((this.width/2) - (width/2)), this.y + ((this.height/2) - (height/2)), width, height);
 
             if (this.curAnimation < this.maxAnimation)
                 this.curAnimation++;
             else {
                 for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.draw();
-                if(this.showBorder) fg.System.context.stroke();
             }
         },
         update: function () {
@@ -2351,39 +2349,79 @@ fg.UI = {
             if(this.align == "center"){
                 if(this.direction == "vertical") {
                     var totalHeight = 0;
-                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) totalHeight += ctrl.height; 
+                    var totalWidth = 0;
+                    var startX = 0;
+                    var startY = 0;
+                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) totalHeight += ctrl.height;
+                    startY = (this.height - totalHeight) / 2; 
+                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
+                        ctrl.y = (this.height - startY) - totalHeight;
+                        totalHeight -= ctrl.height;
+                        ctrl.x = (this.width / 2) - (ctrl.width / 2); 
+                    }
                 }
             }
         },
+        changeHighlighted: function () {
+            for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
+                if (!ctrl.highlighted) continue;
+                ctrl.highlighted = false;
+                if (fg.Input.actions["right"]) {
+                    if (this.controls[i + 1])
+                        this.controls[i + 1].highlighted = true;
+                    else
+                        this.controls[0].highlighted = true;
+                    delete fg.Input.actions["right"];
+                } else {
+                    if (this.controls[i - 1])
+                        this.controls[i - 1].highlighted = true;
+                    else
+                        this.controls[this.controls.length - 1].highlighted = true;
+                    delete fg.Input.actions["left"];
+                }
+                break;
+            }
+        }
     },
     draw: function () {
         this.mainContainer.draw();
     },
     infoBox: {},
-    button: {},
+    button: {
+        text: "myButton",
+        draw: function(){
+            fg.UI.control.draw.call(this);
+            fg.System.context.textBaseline="middle"; 
+            fg.System.context.textAlign="center"; 
+            fg.System.context.font = "8px Arial";
+            fg.System.context.fillStyle = "white";
+            fg.System.context.fillText(this.text, this.parent.x + this.x + (this.width / 2), this.parent.y + this.y + (this.height / 2) + 1);
+        }
+    },
     control: {
+        active: false,
         showBorder: true,
         animate: false,
         curAnimation: 0,
         maxAnimation: 30,
         fillColor: "black",
-        borderColor: "grey",        
+        borderColor: "white",      
+        highlightedColor: "lightGrey",  
         index: 0,
         selected: false,
         highlighted: false,
         x: 0,
         y: 0,
-        width: 20,
-        height: 10,
+        width: 48,
+        height: 12,
         positionRelative: true,
         draw: function(){
             var startX = this.positionRelative ? this.parent.x : 0;
             var startY = this.positionRelative ? this.parent.y : 0;
-            fg.System.context.beginPath();
+            fg.System.context.fillStyle = this.highlighted ? this.highlightedColor : this.fillColor;
+            fg.System.context.fillRect(startX + this.x, startY + this.y, this.width, this.height);
             fg.System.context.fillStyle = this.fillColor;
-            fg.fillRect(startX + this.x, startY + this.y, this.width, this.height);
-            fg.System.context.strokeStyle = this.borderColor;
-            fg.System.context.stroke();
+            fg.System.context.fillRect(startX + this.x + 1, startY + this.y + 1, this.width - 2, this.height - 2);
         },
         parent: null,
         controls: [],
@@ -2401,6 +2439,9 @@ fg.UI = {
             fg.Game.paused = false;
             fg.Game.saving = false;
             this.mainContainer.reset();
+        }
+        if (this.mainContainer.active) {
+            if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainContainer.changeHighlighted();
         }
     }
 }
@@ -2493,6 +2534,7 @@ fg.Timer = {
             }
 
             fg.System.context.font = "10px Arial";
+            fg.System.context.textAlign="left"; 
             if(fg.Game.paused) {
                 fg.System.context.fillStyle = "black";
                 fg.System.context.fillRect(9, 1, 30, 10);
