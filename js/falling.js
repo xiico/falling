@@ -2314,21 +2314,38 @@ fg.Game =
     }
 
 fg.UI = {
-    init: function() {
-        this.mainContainer = Object.assign(Object.create(this.control),this.container , {
+    init: function () {
+        this.mainContainer = Object.assign(Object.create(this.control), this.container, {
+            id: "mainContainer",
             active: true,
             animate: true,
             visible: true,
             width: 100,
             height: 80,
+            controls: [],
             x: (fg.System.canvas.width / 2) - (100 / 2),
-            y: (fg.System.canvas.height / 2) - (80 / 2)}); 
-        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {id:"save",text:"SAVE", highlighted: true,
-        click: function(){
-            var saveStations = this.parent.controls.find(function(e){return e.id == "saveStations"});
-            saveStations.visible = true;
-        }}));
-        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {id:"load",text:"LOAD"}));
+            y: (fg.System.canvas.height / 2) - (80 / 2)
+        });
+        var buttonList = Object.assign(Object.create(this.control), this.container, {
+            id: "buttonList",
+            active: true,
+            animate: true,
+            visible: true,
+            width: 100,
+            height: 80,
+            controls: [],
+            x: (fg.System.canvas.width / 2) - (100 / 2),
+            y: (fg.System.canvas.height / 2) - (80 / 2)
+        });
+        this.mainContainer.addControl(buttonList);
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
+            id: "save", text: "SAVE", highlighted: true, controls: [],
+            click: function () {
+                var saveStations = this.parent.controls.find(function (e) { return e.id == "saveStations" });
+                saveStations.visible = true;
+            }
+        }));
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "load", controls: [], text: "LOAD" }));
     },
     mainContainer: undefined,
     container: {
@@ -2340,8 +2357,10 @@ fg.UI = {
             var fractionY = this.height / this.maxAnimation;
             var width = (fractionX * this.curAnimation);
             var height = (fractionY * this.curAnimation);
+            var parentX = this.parent ? this.parent.x : 0;
+            var parentY = this.parent ? this.parent.y : 0;
             fg.System.context.fillStyle = this.fillColor;
-            fg.System.context.fillRect(this.x + ((this.width/2) - (width/2)), this.y + ((this.height/2) - (height/2)), width, height);
+            fg.System.context.fillRect(parentX + this.x + ((this.width/2) - (width/2)), parentY + this.y + ((this.height/2) - (height/2)), width, height);
 
             if (this.curAnimation < this.maxAnimation)
                 this.curAnimation++;
@@ -2434,7 +2453,6 @@ fg.UI = {
             fg.System.context.fillRect(startX + this.x + 1, startY + this.y + 1, this.width - 2, this.height - 2);
         },
         parent: null,
-        controls: [],
         addControl: function(obj) {
             obj.parent = this;
             this.controls.push(obj);
