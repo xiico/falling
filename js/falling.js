@@ -466,6 +466,7 @@ fg.Active =
             }
             if (this.entitiesToResolveX.length > 0) {
                 this.resolveCollisions(this.entitiesToResolveX, this.entitiesToResolveY);
+                if(this.type == TYPE.ACTOR && (Math.abs(this.speedX) >= Math.abs(this.maxSpeedX * 1.5) || Math.abs(this.speedY) > Math.abs(this.maxSpeedY * 1.5 ))) this.life = 0;
             } else {
                 this.addedSpeedX = 0;
                 this.x = this.nextPosition.x;
@@ -1353,6 +1354,7 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         screen: undefined,
         screenCanvas: fg.$new("canvas"),
         screenContext: null,
+        foreGround: true,
         drawScreen: function () {
             //this.screenContext.drawImage(fg.Render.cached[this.type], 0, 0, this.width, this.height,0, 0, this.width, this.height);
             fg.Render.cached[this.type].getContext('2d').drawImage(fg.System.canvas, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
@@ -1880,7 +1882,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.cacheHeight = actor.height;
     //powerUps
     actor.glove = false;
-    actor.wallJump = false;
+    actor.wallJump = true;
 
     actor.wallSliding = false;
     actor.segments = [];
@@ -2022,7 +2024,7 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 168, fg.System.defaultSide * 228, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 166, fg.System.defaultSide * 229, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
                     fg.Game.actors[0].bounceness = 0;
                     fg.Game.actors[0].searchDepth = 12;
                     fg.Camera.follow(fg.Game.actors[0]);
@@ -2137,7 +2139,7 @@ fg.Game =
             }
         },
         updateEntity: function (obj) {
-            obj.update();
+            if (!obj.foreGround) obj.update();
             if (obj.x > fg.Camera.right || obj.x + obj.width < fg.Camera.left || obj.y > fg.Camera.bottom || obj.y + obj.height < fg.Camera.top) return;
             obj.draw();
             if (obj.foreGround)
@@ -2316,18 +2318,24 @@ fg.UI = {
         this.mainContainer = Object.assign(Object.create(this.control),this.container , {
             active: true,
             animate: true,
+            visible: true,
             width: 100,
             height: 80,
             x: (fg.System.canvas.width / 2) - (100 / 2),
             y: (fg.System.canvas.height / 2) - (80 / 2)}); 
-        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {text:"SAVE", highlighted: true}));
-        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {text:"LOAD"}));
+        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {id:"save",text:"SAVE", highlighted: true,
+        click: function(){
+            var saveStations = this.parent.controls.find(function(e){return e.id == "saveStations"});
+            saveStations.visible = true;
+        }}));
+        this.mainContainer.addControl(Object.assign(Object.create(this.control),this.button, {id:"load",text:"LOAD"}));
     },
     mainContainer: undefined,
     container: {
         align: "center",
         direction: "vertical",
         draw: function () {
+            if(!this.visible) return;
             var fractionX = this.width / this.maxAnimation;
             var fractionY = this.height / this.maxAnimation;
             var width = (fractionX * this.curAnimation);
@@ -2415,7 +2423,9 @@ fg.UI = {
         width: 48,
         height: 12,
         positionRelative: true,
+        visible: true,
         draw: function(){
+            if(!this.visible) return;
             var startX = this.positionRelative ? this.parent.x : 0;
             var startY = this.positionRelative ? this.parent.y : 0;
             fg.System.context.fillStyle = this.highlighted ? this.highlightedColor : this.fillColor;
@@ -2432,7 +2442,8 @@ fg.UI = {
         },
         reset: function(){
             this.curAnimation = 0;
-        }
+        }, 
+        click:function(){}
     },
     update: function () {
         if (fg.Input.actions["esc"]) {
@@ -2442,6 +2453,7 @@ fg.UI = {
         }
         if (this.mainContainer.active) {
             if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainContainer.changeHighlighted();
+            if (fg.Input.actions["enter"] || fg.Input.actions["jump"]) this.mainContainer.controls.find(function(e){return e.highlighted}).click();
         }
     }
 }
