@@ -1409,6 +1409,7 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
                     if (this.tuning == this.maxTuning) {
                         fg.Game.saving = true;
                         fg.Game.paused = true;
+                        fg.Game.curSaveStation = this;
                     }
                 }
                 if (this.tuning / 60 >= this.animationIndex) this.cacheX = 0;
@@ -1933,7 +1934,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
                 this.life = 100;
                 this.vanished = undefined;
                 fg.Camera.following = this;
-                fg.Game.warp(this, { x: (parseInt(this.lastCheckPoint.id.split("-")[0]) - 1), y: parseInt(this.lastCheckPoint.id.split("-")[1]) });
+                fg.Game.warp(this, { y: (parseInt(this.lastCheckPoint.id.split("-")[0]) - 1), x: parseInt(this.lastCheckPoint.id.split("-")[1]) });
             }
             return true;
         }
@@ -2068,8 +2069,8 @@ fg.Game =
                 var posX = saveState.startPosition.x;
                 var posY = saveState.startPosition.y;
 
-                fg.Game.actors[0].x = (posY * fg.System.defaultSide) + fg.Game.actors[0].width / 2;
-                fg.Game.actors[0].y = (posX * fg.System.defaultSide) + fg.Game.actors[0].height / 2;
+                fg.Game.actors[0].x = (posY * fg.System.defaultSide) + ((fg.System.defaultSide / 2) - (fg.Game.actors[0].width / 2));
+                fg.Game.actors[0].y = (posX * fg.System.defaultSide) + ((fg.System.defaultSide / 2) - (fg.Game.actors[0].height / 2));
 
                 fg.Game.actors[0].glove = saveState.powerUps.glove;
                 fg.Game.actors[0].light = saveState.powerUps.light;
@@ -2078,24 +2079,25 @@ fg.Game =
                 fg.Game.actors[0].velocity = saveState.powerUps.velocity;
             }
         },
-        saveState: function (obj, actor) {
-            var oldSaveState = localStorage.FallingSaveState ? JSON.parse(localStorage.FallingSaveState) : null;
-            var saveStations = oldSaveState && oldSaveState.saveStations ? oldSaveState.saveStations : [];
+        saveState: function () {
+            var curSaveState = localStorage.fallingSaveState ? JSON.parse(localStorage.fallingSaveState) : null;
+            var saveStations = curSaveState && curSaveState.saveStations ? curSaveState.saveStations : [];
 
-            if (!saveStations.find(function (e) { return e.id == obj.id })) {
-                saveStations.push({ id: obj.id, screen: obj.screen, date: new Date() });
-            }
+            var saveStation = saveStations.find(function (e) { return e.id == fg.Game.curSaveStation.id }); 
+            if (!saveStation) 
+                saveStations.push({ id: fg.Game.curSaveStation.id, screen: fg.Game.curSaveStation.screen, date: Date.now() });
+             else
+                saveStations[saveStations.indexOf(saveStation)] = { id: fg.Game.curSaveStation.id, screen: fg.Game.curSaveStation.screen, date: Date.now() };
 
             var saveState = {
-                startPosition: { x: obj.id.split('-')[0], y: obj.id.split('-')[1] },
+                startPosition: { x: fg.Game.curSaveStation.id.split('-')[0], y: fg.Game.curSaveStation.id.split('-')[1] },
                 powerUps: {
-                    glove: actor.glove,
-                    light: actor.light,
-                    wallJump: actor.wallJump,
-                    superJump: actor.superJump,
-                    velocity: actor.velocity
+                    glove: fg.Game.actors[0].glove,
+                    light: fg.Game.actors[0].light,
+                    wallJump: fg.Game.actors[0].wallJump,
+                    superJump: fg.Game.actors[0].superJump,
+                    velocity: fg.Game.actors[0].velocity
                 },
-                screen: { src: obj.screen.src },
                 saveStations: saveStations
             };
             localStorage.fallingSaveState = JSON.stringify(saveState);
@@ -2113,7 +2115,7 @@ fg.Game =
                 for (var index = 0, entity; entity = this.actors[index]; index++)
                     this.updateEntity(entity);
                 for (var index = this.foreGroundEntities.length - 1, entity; entity = this.foreGroundEntities[index]; index--) {
-                    if (entity.type != TYPE.SWITCH) entity.update();
+                    entity.update();
                     entity.draw(true);
                 }
                 fg.Camera.update();
@@ -2133,8 +2135,8 @@ fg.Game =
             var x = checkPoint ? checkPoint.x : 0;//warpx.value;
             var y = checkPoint ? checkPoint.y : 0;//warpy.value;
             if (x != "" && y != "") {
-                entity.y = (x * fg.System.defaultSide) + entity.height / 2;
-                entity.x = (y * fg.System.defaultSide) + entity.height / 2;
+                entity.y = (y * fg.System.defaultSide) + entity.width / 2;
+                entity.x = (x * fg.System.defaultSide) + entity.height / 2;
                 fg.Camera.fixed = false;
             }
         },
@@ -2334,15 +2336,15 @@ fg.UI = {
             width: 100,
             height: 80,
             controls: [],
-            x: (fg.System.canvas.width / 2) - (100 / 2),
-            y: (fg.System.canvas.height / 2) - (80 / 2)
+            x: 0,
+            y: 0
         });
         this.mainContainer.addControl(buttonList);
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
             id: "save", text: "SAVE", highlighted: true, controls: [],
             click: function () {
-                var saveStations = this.parent.controls.find(function (e) { return e.id == "saveStations" });
-                saveStations.visible = true;
+                fg.Game.saveState();
+                return true;
             }
         }));
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "load", controls: [], text: "LOAD" }));
@@ -2357,10 +2359,8 @@ fg.UI = {
             var fractionY = this.height / this.maxAnimation;
             var width = (fractionX * this.curAnimation);
             var height = (fractionY * this.curAnimation);
-            var parentX = this.parent ? this.parent.x : 0;
-            var parentY = this.parent ? this.parent.y : 0;
             fg.System.context.fillStyle = this.fillColor;
-            fg.System.context.fillRect(parentX + this.x + ((this.width/2) - (width/2)), parentY + this.y + ((this.height/2) - (height/2)), width, height);
+            fg.System.context.fillRect(this.realX + this.x + ((this.width/2) - (width/2)), this.realY + this.y + ((this.height/2) - (height/2)), width, height);
 
             if (this.curAnimation < this.maxAnimation)
                 this.curAnimation++;
@@ -2373,12 +2373,13 @@ fg.UI = {
         },
         addControl: function(obj){
             var _ctrl = fg.UI.control.addControl.call(this, obj)
+            if(this.controls.length == 1) this.setHighlightedControl(obj);
             if(this.align == "center"){
                 if(this.direction == "vertical") {
                     var totalHeight = 0;
                     var totalWidth = 0;
                     var startX = 0;
-                    var startY = 0;
+                    var startY = 0;                    
                     for(var i = 0, ctrl; ctrl = this.controls[i];i++) totalHeight += ctrl.height;
                     startY = (this.height - totalHeight) / 2; 
                     for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
@@ -2391,6 +2392,7 @@ fg.UI = {
         },
         changeHighlighted: function () {
             for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
+                if(ctrl.controls.length > 0) ctrl.changeHighlighted();
                 if (!ctrl.highlighted) continue;
                 ctrl.highlighted = false;
                 if (fg.Input.actions["right"]) {
@@ -2399,15 +2401,23 @@ fg.UI = {
                     else
                         this.controls[0].highlighted = true;
                     delete fg.Input.actions["right"];
+                    this.setHighlightedControl(this.controls[i + 1] || this.controls[0]);
                 } else {
                     if (this.controls[i - 1])
                         this.controls[i - 1].highlighted = true;
                     else
                         this.controls[this.controls.length - 1].highlighted = true;
                     delete fg.Input.actions["left"];
+                    this.setHighlightedControl(this.controls[i - 1] || this.controls[this.controls.length - 1]);
                 }
                 break;
             }
+        },
+        setHighlightedControl: function(ctrl){
+            if(this.parent) 
+                this.parent.setHighlightedControl(ctrl);
+            else
+                this.highlightedControl = ctrl;
         }
     },
     draw: function () {
@@ -2422,7 +2432,7 @@ fg.UI = {
             fg.System.context.textAlign="center"; 
             fg.System.context.font = "8px Arial";
             fg.System.context.fillStyle = "white";
-            fg.System.context.fillText(this.text, this.parent.x + this.x + (this.width / 2), this.parent.y + this.y + (this.height / 2) + 1);
+            fg.System.context.fillText(this.text, this.realX + this.x + (this.width / 2), this.realY + this.y + (this.height / 2) + 1);
         }
     },
     control: {
@@ -2439,14 +2449,16 @@ fg.UI = {
         highlighted: false,
         x: 0,
         y: 0,
+        realX: 0,
+        realY: 0,
         width: 48,
         height: 12,
         positionRelative: true,
         visible: true,
         draw: function(){
             if(!this.visible) return;
-            var startX = this.positionRelative ? this.parent.x : 0;
-            var startY = this.positionRelative ? this.parent.y : 0;
+            var startX = this.positionRelative ? (this.parent || this).realX : 0;
+            var startY = this.positionRelative ? (this.parent || this).realY : 0;
             fg.System.context.fillStyle = this.highlighted ? this.highlightedColor : this.fillColor;
             fg.System.context.fillRect(startX + this.x, startY + this.y, this.width, this.height);
             fg.System.context.fillStyle = this.fillColor;
@@ -2455,6 +2467,8 @@ fg.UI = {
         parent: null,
         addControl: function(obj) {
             obj.parent = this;
+            obj.realX = this.realX + this.x;
+            obj.realY = this.realY + this.y;
             this.controls.push(obj);
             return obj;
         },
@@ -2463,15 +2477,20 @@ fg.UI = {
         }, 
         click:function(){}
     },
-    update: function () {
-        if (fg.Input.actions["esc"]) {
-            fg.Game.paused = false;
+    close: function(){
+                    fg.Game.paused = false;
             fg.Game.saving = false;
             this.mainContainer.reset();
+    },
+    update: function () {
+        if (fg.Input.actions["esc"]) {
+            this.close();
         }
         if (this.mainContainer.active) {
             if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainContainer.changeHighlighted();
-            if (fg.Input.actions["enter"] || fg.Input.actions["jump"]) this.mainContainer.controls.find(function(e){return e.highlighted}).click();
+            if (fg.Input.actions["enter"] || fg.Input.actions["jump"]) {
+                if((this.mainContainer.highlightedControl || {click:function(){}}).click()) this.close();
+            }
         }
     }
 }
