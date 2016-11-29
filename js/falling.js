@@ -909,12 +909,6 @@ fg.Switch = {
         if (this.targetId) {
             this.target = fg.Game.currentLevel.entities[this.targetId.split('-')[0]][this.targetId.split('-')[1]];
             this.target.drawSegments = this.drawSegments;
-            // this.target.oldUpdate = this.target.update;
-            // this.target.switch = this;
-            // this.target.update = function (bj) {                
-            //     if (this.drawSegments) this.drawSegments();
-            //     //if(this.oldUpdate) this.oldUpdate.apply(this);
-            // }
             this.target.update = (function (original) {
                 return function () {
                     if (this.drawSegments) this.drawSegments();
@@ -1364,7 +1358,6 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         frameCount: 6,
         drawScreen: function () {
             if(!fg.Render.cached[this.type]) this.draw();
-            //this.screenContext.drawImage(fg.Render.cached[this.type], 0, 0, this.width, this.height,0, 0, this.width, this.height);
             fg.Render.cached[this.type].getContext('2d').drawImage(fg.System.canvas, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
             this.screen = fg.System.canvas.toDataURL("image/png");
         },
@@ -2018,6 +2011,12 @@ fg.Game =
         start: function () {
             fg.System.init();
             fg.UI.init();
+            if (fg.Game.actors.length == 0) {
+                fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 2, fg.System.defaultSide * 2, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                fg.Camera.follow(fg.Game.actors[0]);
+                fg.Camera.init();
+            }
+            this.loadState();
             this.currentLevel = this.loadLevel("levelOne");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
@@ -2037,17 +2036,6 @@ fg.Game =
         },
         run: function () {
             if (fg.Game.currentLevel.loaded) {
-                if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 2, fg.System.defaultSide * 2, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
-                    //fg.Game.actors[0].bounceness = 0;
-                    //fg.Game.actors[0].searchDepth = 12;
-                    fg.Game.loadState();
-                    fg.Camera.follow(fg.Game.actors[0]);
-                    fg.Camera.init();
-
-                    //fg.Game.actors[1] = fg.Entity("c-c", TYPE.CIRCLE, fg.System.defaultSide * 6, fg.System.defaultSide * 168, 0, 0, 0);//12,19|181,54|6,167|17,12                    
-                    //fg.Camera.follow(fg.Game.actors[1]);
-                }
                 if (!fg.Game.started) {
                     if (Object.keys(fg.Input.actions).length > 0) {
                         fg.Input.actions = {};
@@ -2092,6 +2080,8 @@ fg.Game =
                 fg.Game.actors[0].wallJump = saveState.powerUps.wallJump;
                 fg.Game.actors[0].superJump = saveState.powerUps.superJump;
                 fg.Game.actors[0].velocity = saveState.powerUps.velocity;
+
+                this.loadedSaveStations = saveState.saveStations;
             }
         },
         saveState: function () {
@@ -2339,6 +2329,7 @@ fg.Game =
     }
 
 fg.UI = {
+    closeAll: false,
     init: function () {
         this.mainContainer = Object.assign(Object.create(this.control), this.container, {
             id: "mainContainer", active: true, animate: true, visible: true, width: 100, height: 80, controls: [],
@@ -2362,8 +2353,24 @@ fg.UI = {
         }));
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "warp", controls: [], text: "WARP", 
         click: function(){
-            fg.UI.mainContainer.controls.find(function(e){return e.id == "saveStationList"}).visible = true;
+            var saveStationList = fg.UI.mainContainer.controls.find(function(e){return e.id == "saveStationList"});        
+            saveStationList.controls = [];    
+            for(var i = 0, ctrl; ctrl = fg.Game.loadedSaveStations[i];i++){
+                saveStationList.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, fg.UI.infoBox, {
+                    id: "infoBox"+ctrl.id, text: ctrl.id, highlighted: i == 0, controls: [],
+                    image: ctrl.screen, ctrl: ctrl,
+                    click: function () {                        
+                        fg.Game.warp(fg.Game.actors[0], { y: (parseInt(this.ctrl.id.split("-")[0]) - 1), x: parseInt(this.ctrl.id.split("-")[1]) });
+                        fg.UI.closeAll = true;
+                        return true;
+                    }
+                }));
+            }
+            saveStationList.visible = true;
+            if(fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
+            if(fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
         } }));
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {id: "cancel", text: "CANCEL", controls: [], click: function () {}}));
     },
     mainContainer: undefined,
     container: {
@@ -2416,8 +2423,10 @@ fg.UI = {
         },
         changeHighlighted: function () {
             for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
-                if(ctrl.controls.length > 0) ctrl.changeHighlighted();
-                if (!ctrl.highlighted) continue;
+                if(ctrl.controls.length > 0) {
+                    ctrl.changeHighlighted();
+                }
+                if (!ctrl.highlighted || !this.active) continue;
                 ctrl.highlighted = false;
                 if (fg.Input.actions["right"]) {
                     if (this.controls[i + 1])
@@ -2442,6 +2451,9 @@ fg.UI = {
                 this.parent.setHighlightedControl(ctrl);
             else
                 this.highlightedControl = ctrl;
+        },
+        highlightedControl: function(){
+            return this.controls.find(function(e){return e.highlighted});
         }
     },
     draw: function () {
@@ -2493,8 +2505,8 @@ fg.UI = {
         visible: true,
         draw: function(){
             if(!this.visible) return;
-            var startX = this.positionRelative ? (this.parent || this).realX : 0;
-            var startY = this.positionRelative ? (this.parent || this).realY : 0;
+            var startX = this.positionRelative ? this.realX : 0;
+            var startY = this.positionRelative ? this.realY : 0;
             fg.System.context.fillStyle = this.highlighted ? this.highlightedColor : this.fillColor;
             fg.System.context.fillRect(startX + this.x, startY + this.y, this.width, this.height);
             fg.System.context.fillStyle = this.fillColor;
@@ -2516,22 +2528,35 @@ fg.UI = {
     close: function(){
         var activeContainers = this.mainContainer.controls.filter(function(e){return e.visible});
         if(activeContainers.length > 1) {
-            activeContainers[activeContainers.length - 1].visible = false;
-            delete fg.Input.actions["esc"];
-            return;
+            if(!fg.UI.closeAll){
+                activeContainers[activeContainers.length - 1].visible = false;
+                delete fg.Input.actions["esc"];
+                return;
+            } else {
+                while (this.mainContainer.controls.filter(function(e){return e.visible}).length > 1){
+                    activeContainers = this.mainContainer.controls.filter(function(e){return e.visible});
+                    activeContainers[activeContainers.length - 1].visible = false;
+                }
+            }
         }
         fg.Game.paused = false;
         fg.Game.saving = false;
+        this.closeAll = false;
         this.mainContainer.reset();
     },
+    activeContainer: function(){
+        return this.mainContainer.controls.find(function(e){return e.active});
+    },
     update: function () {
+        var visibleContainers = this.mainContainer.controls.filter(function(e){return e.visible});
+        for(var i = 0, ctrl; ctrl = visibleContainers[i];i++)  ctrl.active = i == visibleContainers.length - 1;
         if (fg.Input.actions["esc"]) {
             this.close();
         }
         if (this.mainContainer.active) {
             if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainContainer.changeHighlighted();
             if (fg.Input.actions["enter"] || fg.Input.actions["jump"]) {
-                if((this.mainContainer.highlightedControl || {click:function(){}}).click()) this.close();
+                if((this.activeContainer().highlightedControl() || {click:function(){}}).click()) this.close();
             }
         }
     }
