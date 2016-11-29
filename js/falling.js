@@ -924,8 +924,9 @@ fg.Switch = {
         }
         this.timer = this.defaulTimer;
     },
-    update: function () {
+    update: function (foreGround) {
         if (this.target === undefined) this.init();
+        if(foreGround) return;
         if (this.interacting) {
             if (this.interactor.x >= this.x && this.interactor.x + this.interactor.width <= this.x + this.width) {
                 if (this.canChangeState) {
@@ -1362,6 +1363,7 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         foreGround: true,
         frameCount: 6,
         drawScreen: function () {
+            if(!fg.Render.cached[this.type]) this.draw();
             //this.screenContext.drawImage(fg.Render.cached[this.type], 0, 0, this.width, this.height,0, 0, this.width, this.height);
             fg.Render.cached[this.type].getContext('2d').drawImage(fg.System.canvas, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
             this.screen = fg.System.canvas.toDataURL("image/png");
@@ -1402,7 +1404,8 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
 
             return c;
         },
-        update: function () {
+        update: function (foreGround) {
+            if(foreGround) return;
             this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
             this.cacheX = this.animationIndex * this.width;
             fg.Game.saving = false;
@@ -1852,15 +1855,15 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
     crate.cacheWidth = crate.width;
     crate.cacheHeight = crate.height;
     crate.drawTile = function (c, ctx) {
-        c.width = fg.System.defaultSide / 2;
+        c.width = fg.System.defaultSide /*/ 2*/;
         c.height = fg.System.defaultSide / 2;
 
         ctx.fillStyle = "rgb(110,50,25)";
-        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.fillRect(0, 0, this.width, this.height);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.strokeStyle = "rgb(205,153,69)";
-        ctx.rect(1.5, 1.5, (c.width) - 3, (c.height) - 3);
+        ctx.rect(1.5, 1.5, (this.width) - 3, (this.height) - 3);
         ctx.stroke();
         ctx.fillStyle = "rgb(150,79,15)";
         ctx.fillRect(3, 3, 7, 7);
@@ -1868,7 +1871,7 @@ fg.Crate = function (id, type, x, y, cx, cy, index) {
         ctx.fillRect(3, 4, 7, 1);
         ctx.fillRect(3, 6, 7, 1);
         ctx.fillRect(3, 8, 7, 1);
-        ctx.fillRect(c.width, 0, c.width, c.height);
+        ctx.fillRect(this.width, 0, this.width, this.height);
 
         return c;
     };
@@ -2128,7 +2131,7 @@ fg.Game =
                 for (var index = 0, entity; entity = this.actors[index]; index++)
                     this.updateEntity(entity);
                 for (var index = this.foreGroundEntities.length - 1, entity; entity = this.foreGroundEntities[index]; index--) {
-                    entity.update();
+                    entity.update(true);
                     entity.draw(true);
                 }
                 fg.Camera.update();
@@ -2160,7 +2163,7 @@ fg.Game =
             }
         },
         updateEntity: function (obj) {
-            if (!obj.foreGround) obj.update();
+            if (!obj.foreGround || obj.backGround) obj.update();
             if (obj.x > fg.Camera.right || obj.x + obj.width < fg.Camera.left || obj.y > fg.Camera.bottom || obj.y + obj.height < fg.Camera.top) return;
             //fg.Game.visibleEntities.push(obj);
             obj.draw();
