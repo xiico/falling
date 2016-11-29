@@ -2013,10 +2013,10 @@ fg.Game =
             fg.UI.init();
             if (fg.Game.actors.length == 0) {
                 fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 2, fg.System.defaultSide * 2, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
-                fg.Camera.follow(fg.Game.actors[0]);
-                fg.Camera.init();
             }
             this.loadState();
+            fg.Camera.follow(fg.Game.actors[0]);
+            fg.Camera.init();
             this.currentLevel = this.loadLevel("levelOne");
             fg.Input.initKeyboard();
             fg.Input.bind(fg.Input.KEY.SPACE, "jump");
