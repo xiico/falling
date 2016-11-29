@@ -167,7 +167,12 @@ fg.Camera = {
     dampY: 0,
     dampRatio: 0.96,
     position: 0,
-    init: function () { },
+    init: function () {
+        if(this.following) {
+            fg.Game.screenOffsetX = this.following.x;
+            fg.Game.screenOffsetY = this.following.y;
+        }
+     },
     follow: function (obj) {
         this.following = obj;
     },
@@ -1355,6 +1360,7 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         screenCanvas: fg.$new("canvas"),
         screenContext: null,
         foreGround: true,
+        frameCount: 6,
         drawScreen: function () {
             //this.screenContext.drawImage(fg.Render.cached[this.type], 0, 0, this.width, this.height,0, 0, this.width, this.height);
             fg.Render.cached[this.type].getContext('2d').drawImage(fg.System.canvas, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
@@ -1366,9 +1372,9 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
             this.screenContext = this.screenCanvas.getContext('2d');
             var imageData = null;
             var data = null;
-            c.width = this.width * 6;
+            c.width = this.width * this.frameCount;
             c.height = this.height;
-            for (var index = 0; index <= 5; index++) {
+            for (var index = 0; index < this.frameCount; index++) {
                 var offSetX = this.width * index;
                 ctx.fillStyle = "black";
                 ctx.fillRect(offSetX + 0, 0, this.width, this.height);
@@ -1890,6 +1896,8 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.wait = 0;
     actor.respawn = 0;
     actor.lastCheckPoint = null;
+    actor.bounceness = 0;
+    actor.searchDepth = 12;
     actor.drawTile = function (c, ctx) {
         c.width = this.width * 2;
         c.height = this.height;
@@ -2002,6 +2010,8 @@ fg.Game =
             this.levels.push(fg.Level(name));
             return this.levels[this.levels.length - 1];
         },
+        screenShot: undefined,
+        loadedSaveStations: [],
         start: function () {
             fg.System.init();
             fg.UI.init();
@@ -2025,10 +2035,12 @@ fg.Game =
         run: function () {
             if (fg.Game.currentLevel.loaded) {
                 if (fg.Game.actors.length == 0) {
-                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 166, fg.System.defaultSide * 229, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
-                    fg.Game.actors[0].bounceness = 0;
-                    fg.Game.actors[0].searchDepth = 12;
+                    fg.Game.actors[0] = fg.Entity("A-A", TYPE.ACTOR, fg.System.defaultSide * 2, fg.System.defaultSide * 2, 0, 0, 0);//17,12|181,54|6,167|17,11|437,61|99,47|98,8|244,51|61,57
+                    //fg.Game.actors[0].bounceness = 0;
+                    //fg.Game.actors[0].searchDepth = 12;
+                    fg.Game.loadState();
                     fg.Camera.follow(fg.Game.actors[0]);
+                    fg.Camera.init();
 
                     //fg.Game.actors[1] = fg.Entity("c-c", TYPE.CIRCLE, fg.System.defaultSide * 6, fg.System.defaultSide * 168, 0, 0, 0);//12,19|181,54|6,167|17,12                    
                     //fg.Camera.follow(fg.Game.actors[1]);
@@ -2039,10 +2051,10 @@ fg.Game =
                         fg.Game.started = true;
                     }
                     fg.Game.showTitle();
+                    fg.Timer.update();
                 } else fg.Game.update();
-                fg.Timer.update();
-            } else fg.Game.drawLoading(10, fg.System.canvas.height - 20, fg.System.canvas.width - 20, 20);
-
+            } else fg.Game.drawLoading(10, fg.System.canvas.height - 20, fg.System.canvas.width - 20, 20);            
+            
             requestAnimationFrame(fg.Game.run);
         },
         clearScreen: function () {
@@ -2104,9 +2116,10 @@ fg.Game =
         },
         update: function () {
             if ((fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) && !this.saving) this.paused = !this.paused;
-            this.lastPauseState = fg.Input.actions["esc"];            
+            this.lastPauseState = fg.Input.actions["esc"];
             if (!this.paused) {
-                this.clearScreen();
+                this.clearScreen();            
+                if(this.screenShot) this.screenShot = null;
                 this.foreGroundEntities = [];
                 this.searchArea(((fg.System.canvas.width / 2) + fg.Game.screenOffsetX),
                     ((fg.System.canvas.height / 2) + fg.Game.screenOffsetY),
@@ -2120,16 +2133,22 @@ fg.Game =
                 }
                 fg.Camera.update();
                 this.saveScreenAnimation = 0;
-            } else {
+            } else {                         
+                if(!this.screenShot) {
+                    var img = new Image();
+                    img.src = fg.System.canvas.toDataURL();
+                    this.screenShot = img;
+                }
+                fg.Render.drawImage(this.screenShot,0,0);
                 if (!this.saving) {
                     fg.System.context.fillStyle = "black";
-                    fg.System.context.fillRect((fg.System.canvas.width / 2) - 16, 170, 46, 12)
                     this.drawFont("PAUSED", "", (fg.System.canvas.width / 2) - 12, 180);
                 } else {
                     fg.UI.update();
                     fg.UI.draw();
                 }
             }
+            fg.Timer.update();
         },
         warp: function (entity, checkPoint) {
             var x = checkPoint ? checkPoint.x : 0;//warpx.value;
@@ -2143,6 +2162,7 @@ fg.Game =
         updateEntity: function (obj) {
             if (!obj.foreGround) obj.update();
             if (obj.x > fg.Camera.right || obj.x + obj.width < fg.Camera.left || obj.y > fg.Camera.bottom || obj.y + obj.height < fg.Camera.top) return;
+            //fg.Game.visibleEntities.push(obj);
             obj.draw();
             if (obj.foreGround)
                 fg.Game.foreGroundEntities.push(obj);
@@ -2318,28 +2338,18 @@ fg.Game =
 fg.UI = {
     init: function () {
         this.mainContainer = Object.assign(Object.create(this.control), this.container, {
-            id: "mainContainer",
-            active: true,
-            animate: true,
-            visible: true,
-            width: 100,
-            height: 80,
-            controls: [],
+            id: "mainContainer", active: true, animate: true, visible: true, width: 100, height: 80, controls: [],
             x: (fg.System.canvas.width / 2) - (100 / 2),
             y: (fg.System.canvas.height / 2) - (80 / 2)
         });
         var buttonList = Object.assign(Object.create(this.control), this.container, {
-            id: "buttonList",
-            active: true,
-            animate: true,
-            visible: true,
-            width: 100,
-            height: 80,
-            controls: [],
-            x: 0,
-            y: 0
+            id: "buttonList", active: true, animate: false, visible: true, width: 100, height: 80, controls: [], x: 0,  y: 0
+        });
+        var saveStationList = Object.assign(Object.create(this.control), this.container, {
+            id: "saveStationList", active: true, animate: true, visible: false, width: 240, height: 192, controls: [], x: -70,  y: -60
         });
         this.mainContainer.addControl(buttonList);
+        this.mainContainer.addControl(saveStationList);
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
             id: "save", text: "SAVE", highlighted: true, controls: [],
             click: function () {
@@ -2347,16 +2357,22 @@ fg.UI = {
                 return true;
             }
         }));
-        buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "load", controls: [], text: "LOAD" }));
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "warp", controls: [], text: "WARP", 
+        click: function(){
+            fg.UI.mainContainer.controls.find(function(e){return e.id == "saveStationList"}).visible = true;
+        } }));
     },
     mainContainer: undefined,
     container: {
+        type: "container",
         align: "center",
         direction: "vertical",
+        positionRelative: false,
         draw: function () {
             if(!this.visible) return;
             var fractionX = this.width / this.maxAnimation;
             var fractionY = this.height / this.maxAnimation;
+            if(!this.animate) this.curAnimation = this.maxAnimation;
             var width = (fractionX * this.curAnimation);
             var height = (fractionY * this.curAnimation);
             fg.System.context.fillStyle = this.fillColor;
@@ -2373,21 +2389,26 @@ fg.UI = {
         },
         addControl: function(obj){
             var _ctrl = fg.UI.control.addControl.call(this, obj)
-            if(this.controls.length == 1) this.setHighlightedControl(obj);
+            if(this.controls.length == 1) this.setHighlightedControl(obj);            
             if(this.align == "center"){
                 if(this.direction == "vertical") {
                     var totalHeight = 0;
                     var totalWidth = 0;
                     var startX = 0;
                     var startY = 0;                    
-                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) totalHeight += ctrl.height;
+                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
+                        if(!ctrl.positionRelative) continue;
+                        totalHeight += ctrl.height;}
                     startY = (this.height - totalHeight) / 2; 
                     for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
+                        if(!ctrl.positionRelative) continue;
                         ctrl.y = (this.height - startY) - totalHeight;
                         totalHeight -= ctrl.height;
                         ctrl.x = (this.width / 2) - (ctrl.width / 2); 
                     }
                 }
+            } else if(this.align == "grid"){
+
             }
         },
         changeHighlighted: function () {
@@ -2423,8 +2444,20 @@ fg.UI = {
     draw: function () {
         this.mainContainer.draw();
     },
-    infoBox: {},
+    infoBox: {
+        type: "button",
+        image: undefined,
+        imageBox: undefined,
+        update: function(){
+            if(this.image && !this.imageBox){
+                this.imageBox = fg.$new('canvas');
+                var ctx = this.imageBox.getContext('2d');
+                ctx.drawImage(this.realX + this.x + 1, this.realY + this.y + 1, 30, 30);
+            }
+        }
+    },
     button: {
+        type: "button",
         text: "myButton",
         draw: function(){
             fg.UI.control.draw.call(this);
@@ -2478,9 +2511,15 @@ fg.UI = {
         click:function(){}
     },
     close: function(){
-                    fg.Game.paused = false;
-            fg.Game.saving = false;
-            this.mainContainer.reset();
+        var activeContainers = this.mainContainer.controls.filter(function(e){return e.visible});
+        if(activeContainers.length > 1) {
+            activeContainers[activeContainers.length - 1].visible = false;
+            delete fg.Input.actions["esc"];
+            return;
+        }
+        fg.Game.paused = false;
+        fg.Game.saving = false;
+        this.mainContainer.reset();
     },
     update: function () {
         if (fg.Input.actions["esc"]) {
@@ -2518,6 +2557,9 @@ fg.Render = {
     draw: function (data, cacheX, cacheY, width, height, mapX, mapY) {
         fg.System.context.drawImage(data, cacheX, cacheY, width, height,
             Math.floor(mapX - fg.Game.screenOffsetX), Math.floor(mapY - fg.Game.screenOffsetY), width, height);
+    },
+    drawImage: function (data, x, y) {
+        fg.System.context.drawImage(data, x, y);
     },
     cache: function (type, data) {
         this.cached[type] = data;
@@ -2585,6 +2627,7 @@ fg.Timer = {
             fg.System.context.font = "10px Arial";
             fg.System.context.textAlign="left"; 
             if(fg.Game.paused) {
+                fg.System.context.textBaseline  = "alphabetic";
                 fg.System.context.fillStyle = "black";
                 fg.System.context.fillRect(9, 1, 30, 10);
             }
