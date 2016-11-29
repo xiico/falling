@@ -918,7 +918,7 @@ fg.Switch = {
             this.target.update = (function (original) {
                 return function () {
                     if (this.drawSegments) this.drawSegments();
-                    original.apply(this);
+                    original.apply(this, arguments);
                 }
             })(this.target.update)
         }
