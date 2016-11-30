@@ -1885,7 +1885,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     actor.cacheHeight = actor.height;
     //powerUps
     actor.glove = false;
-    actor.wallJump = true;
+    actor.wallJump = false;
 
     actor.wallSliding = false;
     actor.segments = [];
@@ -2105,6 +2105,7 @@ fg.Game =
                 },
                 saveStations: saveStations
             };
+            this.loadedSaveStations = saveState.saveStations;
             localStorage.fallingSaveState = JSON.stringify(saveState);
         },
         update: function () {
