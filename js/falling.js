@@ -2089,6 +2089,7 @@ fg.Game =
             var saveStations = curSaveState && curSaveState.saveStations ? curSaveState.saveStations : [];
 
             var saveStation = saveStations.find(function (e) { return e.id == fg.Game.curSaveStation.id }); 
+            fg.Game.curSaveStation.drawScreen();
             if (!saveStation) 
                 saveStations.push({ id: fg.Game.curSaveStation.id, screen: fg.Game.curSaveStation.screen, date: Date.now() });
              else
@@ -2332,19 +2333,22 @@ fg.Game =
 fg.UI = {
     closeAll: false,
     init: function () {
-        this.mainContainer = Object.assign(Object.create(this.control), this.container, {
-            id: "mainContainer", active: true, animate: true, visible: true, width: 100, height: 80, controls: [],
+        this.mainForm = Object.assign(Object.create(this.control), this.container, this.form, {
+            id: "mainForm", active: true, animate: true, showBorder:true, visible: true, width: 100, height: 80, controls: [],
             x: (fg.System.canvas.width / 2) - (100 / 2),
             y: (fg.System.canvas.height / 2) - (80 / 2)
         });
         var buttonList = Object.assign(Object.create(this.control), this.container, {
             id: "buttonList", active: true, animate: false, visible: true, width: 100, height: 80, controls: [], x: 0,  y: 0
         });
-        var saveStationList = Object.assign(Object.create(this.control), this.container, {
-            id: "saveStationList", active: true, animate: true, visible: false, width: 240, height: 192, controls: [], x: -70,  y: -60
+        var saveStationList = Object.assign(Object.create(this.control), this.container, this.form, {
+            id: "saveStationList", active: true, animate: true, showBorder:true, visible: false, width: 240, height: 192, controls: [], x: -70,  y: -60
         });
-        this.mainContainer.addControl(buttonList);
-        this.mainContainer.addControl(saveStationList);
+        this.mainForm.addControl(buttonList);
+        this.mainForm.addControl(saveStationList);
+        saveStationList.addControl(Object.assign(Object.create(this.control), this.container, {
+            id: "ssList", active: true, animate: false, showBorder: true, visible: true, width: 232, height: 64, controls: [], x: 4,  y: 124
+        }));
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
             id: "save", text: "SAVE", highlighted: true, controls: [],
             click: function () {
@@ -2354,12 +2358,12 @@ fg.UI = {
         }));
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "warp", controls: [], text: "WARP", 
         click: function(){
-            var saveStationList = fg.UI.mainContainer.controls.find(function(e){return e.id == "saveStationList"});        
-            saveStationList.controls = [];    
+            var saveStationList = fg.UI.mainForm.controls.find(function(e){return e.id == "saveStationList"});        
+            saveStationList.getActiveContainer().controls = [];    
             for(var i = 0, ctrl; ctrl = fg.Game.loadedSaveStations[i];i++){
-                saveStationList.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, fg.UI.infoBox, {
-                    id: "infoBox"+ctrl.id, text: ctrl.id, highlighted: i == 0, controls: [],
-                    image: ctrl.screen, ctrl: ctrl,
+                saveStationList.getActiveContainer().addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, {
+                    id: "ss-"+ctrl.id, text: ctrl.id, highlighted: i == 0, controls: [],
+                    image: ctrl.screen, ctrl: ctrl, width: 40,
                     click: function () {                        
                         fg.Game.warp(fg.Game.actors[0], { y: (parseInt(this.ctrl.id.split("-")[0]) - 1), x: parseInt(this.ctrl.id.split("-")[1]) });
                         fg.UI.closeAll = true;
@@ -2371,29 +2375,45 @@ fg.UI = {
             if(fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
             if(fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
         } }));
-        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {id: "cancel", text: "CANCEL", controls: [], click: function () {}}));
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {id: "delete", text: "DELETE", controls: [], click: function () {}}));
     },
-    mainContainer: undefined,
-    container: {
-        type: "container",
-        align: "center",
-        direction: "vertical",
-        positionRelative: false,
+    mainForm: undefined,
+    form: {
+        type: "form",
         draw: function () {
-            if(!this.visible) return;
+            if (!this.visible) return;
             var fractionX = this.width / this.maxAnimation;
             var fractionY = this.height / this.maxAnimation;
-            if(!this.animate) this.curAnimation = this.maxAnimation;
+            if (!this.animate) this.curAnimation = this.maxAnimation;
             var width = (fractionX * this.curAnimation);
             var height = (fractionY * this.curAnimation);
-            fg.System.context.fillStyle = this.fillColor;
-            fg.System.context.fillRect(this.realX + this.x + ((this.width/2) - (width/2)), this.realY + this.y + ((this.height/2) - (height/2)), width, height);
+            fg.System.context.fillStyle = this.showBorder ? this.borderColor : this.fillColor;
+            fg.System.context.fillRect(this.realX + this.x + ((this.width / 2) - (width / 2)), this.realY + this.y + ((this.height / 2) - (height / 2)), width, height);
+            if (this.showBorder) {
+                fg.System.context.fillStyle = this.fillColor;
+                fg.System.context.fillRect(this.realX + this.x + ((this.width / 2) - (width / 2)) + 1, this.realY + this.y + ((this.height / 2) - (height / 2)) + 1, width - 2, height - 2);
+            }
 
             if (this.curAnimation < this.maxAnimation)
                 this.curAnimation++;
             else {
                 for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.draw();
             }
+        },
+    },
+    container: {
+        type: "container",
+        align: "center",
+        direction: "vertical",
+        positionRelative: false,
+        draw: function () {
+            if(this.showBorder){
+                fg.System.context.beginPath();
+                fg.System.context.fillStyle = this.borderColor;
+                fg.System.context.rect(this.realX + this.x, this.realY + this.y, this.width, this.height);
+                fg.System.context.stroke();
+            }
+            for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.draw();
         },
         update: function () {
             for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.update();
@@ -2453,23 +2473,56 @@ fg.UI = {
             else
                 this.highlightedControl = ctrl;
         },
-        highlightedControl: function(){
-            return this.controls.find(function(e){return e.highlighted});
+        getActiveContainer: function(){
+            return this.controls.find(function(e){return e.type == "container" && e.active}) || this;
+        },
+        getHighlightedControl: function(){
+            return this.getActiveContainer().controls.find(function(e){return e.highlighted});
         }
     },
     draw: function () {
-        this.mainContainer.draw();
+        this.mainForm.draw();
+    },
+    confirm: {
+        text: "confirm?",
+        height: 24,
+        draw: function () {
+            fg.UI.control.draw.call(this);
+            fg.System.context.textBaseline = "middle";
+            fg.System.context.textAlign = "center";
+            fg.System.context.font = "8px Arial";
+            fg.System.context.fillStyle = "white";
+            fg.System.context.fillText(this.text, this.realX + this.x + (this.width / 2), this.realY + this.y + (this.height / 2) + 1);
+        },
+        update: function () {
+            if (this.controls.length == 0) {
+                this.addControl(Object.assign(Object.create(this.control), this.button, {
+                    id: "yes", text: "yes", highlighted: true, controls: [],
+                    click: function () {
+                        return true;
+                    }
+                }));
+                this.addControl(Object.assign(Object.create(this.control), this.button, {
+                    id: "no", text: "no", highlighted: true, controls: [],
+                    click: function () {
+                        return false;
+                    }
+                }));
+            }
+        }
     },
     infoBox: {
-        type: "button",
-        image: undefined,
-        imageBox: undefined,
+        image: fg.$new('img'),
+        canvas: fg.$new("canvas"),
+        screen: undefined,
         update: function(){
-            if(this.image && !this.imageBox){
-                this.imageBox = fg.$new('canvas');
-                var ctx = this.imageBox.getContext('2d');
-                ctx.drawImage(this.realX + this.x + 1, this.realY + this.y + 1, 30, 30);
+            if(this.screen){
+                this.image.src = this.screen;
             }
+        },
+        draw: function(){            
+            var ctx = this.canvas.getContext('2d');
+            ctx.drawImage(this.image, this.realX + this.x + 1, this.realY + this.y + 1, 160, 120);
         }
     },
     button: {
@@ -2486,7 +2539,7 @@ fg.UI = {
     },
     control: {
         active: false,
-        showBorder: true,
+        showBorder: false,
         animate: false,
         curAnimation: 0,
         maxAnimation: 30,
@@ -2527,37 +2580,39 @@ fg.UI = {
         click:function(){}
     },
     close: function(){
-        var activeContainers = this.mainContainer.controls.filter(function(e){return e.visible});
-        if(activeContainers.length > 1) {
+        var activeForms = this.mainForm.controls.filter(function(e){return e.visible});
+        if(activeForms.length > 1) {
             if(!fg.UI.closeAll){
-                activeContainers[activeContainers.length - 1].visible = false;
+                activeForms[activeForms.length - 1].visible = false;
+                activeForms[activeForms.length - 1].curAnimation = 0;
                 delete fg.Input.actions["esc"];
                 return;
             } else {
-                while (this.mainContainer.controls.filter(function(e){return e.visible}).length > 1){
-                    activeContainers = this.mainContainer.controls.filter(function(e){return e.visible});
-                    activeContainers[activeContainers.length - 1].visible = false;
+                while (this.mainForm.controls.filter(function(e){return e.visible}).length > 1){
+                    activeForms = this.mainForm.controls.filter(function(e){return e.visible});
+                    activeForms[activeForms.length - 1].visible = false;
+                    activeForms[activeForms.length - 1].curAnimation = 0;
                 }
             }
         }
         fg.Game.paused = false;
         fg.Game.saving = false;
         this.closeAll = false;
-        this.mainContainer.reset();
+        this.mainForm.reset();
     },
-    activeContainer: function(){
-        return this.mainContainer.controls.find(function(e){return e.active});
+    activeForm: function(){
+        return this.mainForm.controls.find(function(e){return e.type == "form" && e.visible && e.active}) || this.mainForm;
     },
     update: function () {
-        var visibleContainers = this.mainContainer.controls.filter(function(e){return e.visible});
-        for(var i = 0, ctrl; ctrl = visibleContainers[i];i++)  ctrl.active = i == visibleContainers.length - 1;
+        var visibleForms = this.mainForm.controls.filter(function(e){return (e.type == "form" || e.type == "container") && e.visible});
+        for(var i = 0, ctrl; ctrl = visibleForms[i];i++)  ctrl.active = i == visibleForms.length - 1;
         if (fg.Input.actions["esc"]) {
             this.close();
         }
-        if (this.mainContainer.active) {
-            if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainContainer.changeHighlighted();
+        if (this.mainForm.active) {
+            if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainForm.changeHighlighted();
             if (fg.Input.actions["enter"] || fg.Input.actions["jump"]) {
-                if((this.activeContainer().highlightedControl() || {click:function(){}}).click()) this.close();
+                if((this.activeForm().getHighlightedControl() || {click:function(){}}).click()) this.close();
             }
         }
     }
