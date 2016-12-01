@@ -2791,5 +2791,6 @@ var TYPE = {
     VELOCITY: "v",
     SUPERJUMP: "j",
     SENTRY: "e",
-    ACTOR: "A"
+    ACTOR: "A",
+    SECRET: "i"
 }
