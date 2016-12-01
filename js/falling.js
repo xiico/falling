@@ -2343,7 +2343,7 @@ fg.UI = {
         });
         var saveStationList = Object.assign(Object.create(this.control), this.container, this.form, {
             id: "saveStationList", active: true, animate: true, showBorder:true, visible: false, width: 240, height: 192, controls: [], x: -70,  y: -60
-        });
+        });        
         this.mainForm.addControl(buttonList);
         this.mainForm.addControl(saveStationList);
         saveStationList.addControl(Object.assign(Object.create(this.control), this.container, {
@@ -2375,7 +2375,30 @@ fg.UI = {
             if(fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
             if(fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
         } }));
-        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {id: "delete", text: "DELETE", controls: [], click: function () {}}));
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
+            id: "delete", text: "DELETE", controls: [], click: function () {
+                if (!fg.UI.mainForm.controls.find(function (e) { return e.id == "confirm" }))
+                    fg.UI.mainForm.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.container, fg.UI.form, fg.UI.confirm,  {
+                        text: "Confirm deletion? (All your progress will be lost!)",
+                        id: "confirm",
+                        controls: [],
+                        x: (this.parent.realX / 2) - (fg.UI.confirm.width / 2),
+                        y: (this.parent.realY / 2) - (fg.UI.confirm.height / 2),
+                        click: function (result) {
+                            if(result) {
+                                fg.UI.closeAll = true;
+                                delete localStorage.fallingSaveState;
+                            }
+                            if (fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
+                            if (fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
+                            return result;
+                        }
+                    }));
+                else fg.UI.mainForm.controls.find(function (e) { return e.id == "confirm" }).show();
+                if (fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
+                if (fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
+            } 
+        }));
     },
     mainForm: undefined,
     form: {
@@ -2422,11 +2445,11 @@ fg.UI = {
             var _ctrl = fg.UI.control.addControl.call(this, obj)
             if(this.controls.length == 1) this.setHighlightedControl(obj);            
             if(this.align == "center"){
-                if(this.direction == "vertical") {
-                    var totalHeight = 0;
-                    var totalWidth = 0;
-                    var startX = 0;
-                    var startY = 0;                    
+                var totalHeight = 0;
+                var totalWidth = 0;
+                var startX = 0;
+                var startY = 0;     
+                if(this.direction == "vertical") {               
                     for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
                         if(!ctrl.positionRelative) continue;
                         totalHeight += ctrl.height;}
@@ -2436,6 +2459,17 @@ fg.UI = {
                         ctrl.y = (this.height - startY) - totalHeight;
                         totalHeight -= ctrl.height;
                         ctrl.x = (this.width / 2) - (ctrl.width / 2); 
+                    }
+                } else if(this.direction == "horizontal")  {               
+                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
+                        if(!ctrl.positionRelative) continue;
+                        totalWidth += ctrl.width;}
+                    startX = (this.width - totalWidth) / 2; 
+                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
+                        if(!ctrl.positionRelative) continue;
+                        ctrl.x = (this.width - startX) - totalWidth;
+                        totalWidth -= ctrl.width;
+                        ctrl.y = (this.height / 2) - (ctrl.height / 2); 
                     }
                 }
             } else if(this.align == "grid"){
@@ -2484,32 +2518,39 @@ fg.UI = {
         this.mainForm.draw();
     },
     confirm: {
+        id: "confirm",
         text: "confirm?",
-        height: 24,
+        width: 180,
+        height: 52,
+        direction: "horizontal",         
+        showBorder: true, 
         draw: function () {
-            fg.UI.control.draw.call(this);
+            if(!this.visible) return;
+            if (this.controls.length == 0) this.addButtons();
+            fg.UI.form.draw.call(this);
             fg.System.context.textBaseline = "middle";
             fg.System.context.textAlign = "center";
             fg.System.context.font = "8px Arial";
             fg.System.context.fillStyle = "white";
-            fg.System.context.fillText(this.text, this.realX + this.x + (this.width / 2), this.realY + this.y + (this.height / 2) + 1);
+            fg.System.context.fillText(this.text, this.realX + this.x + (this.width / 2), this.realY + this.y + 12 + 1);
         },
-        update: function () {
-            if (this.controls.length == 0) {
-                this.addControl(Object.assign(Object.create(this.control), this.button, {
-                    id: "yes", text: "yes", highlighted: true, controls: [],
-                    click: function () {
-                        return true;
-                    }
-                }));
-                this.addControl(Object.assign(Object.create(this.control), this.button, {
-                    id: "no", text: "no", highlighted: true, controls: [],
-                    click: function () {
-                        return false;
-                    }
-                }));
-            }
-        }
+        addButtons: function () {
+            this.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, {
+                id: "yes", text: "yes", highlighted: true, controls: [],
+                click: function () {
+                    this.parent.click(true);
+                    return true;
+                }
+            }));
+            this.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, {
+                id: "no", text: "no", highlighted: false, controls: [],
+                click: function () {
+                    this.parent.click(false);
+                    return true;
+                }
+            }));
+        },
+        show: function(){this.visible = true;}
     },
     infoBox: {
         image: fg.$new('img'),
