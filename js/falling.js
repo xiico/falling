@@ -1225,8 +1225,7 @@ fg.MovingPlatform = {
             if (this.loop) {
                 this.currentIndex = 0;
                 this.nextPosition = this.path[this.currentIndex];
-            }
-            else {
+            } else {
                 this.iterator *= -1;
                 this.nextPosition = this.path[this.currentIndex + this.iterator];
             }
@@ -1241,8 +1240,7 @@ fg.MovingPlatform = {
                 this.movingSpeed *= -1;
         }
 
-        if (this.hoverTime > 0)
-            this.hovering = this.hoverTime;
+        if (this.hoverTime > 0) this.hovering = this.hoverTime;
     },
     update: function () {
         if (!this.path) this.init();
@@ -1276,6 +1274,11 @@ fg.MovingPlatform = {
         this.movingOnX = true;
         this.x += this.movingSpeed * fg.Timer.deltaTime;
         if ((this.movingSpeed < 0 && this.x <= this.nextPosition.x) || (this.movingSpeed > 0 && this.x >= this.nextPosition.x)) {
+            if(this.syncX && this.movingSpeed > 0) {
+                //var synched = fg.Game.currentLevel.entities[this.syncX.split('-')[0]][this.syncX.split('-')[1]];
+                //synched.x = this.x + this.width + (this.segments.length * fg.System.defaultSide);
+                //synched.hovering = 0;
+            }
             this.x = this.nextPosition.x;
             this.setNextPosition();
         }
@@ -1351,15 +1354,22 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         animationIndex: 0,
         tuning: 0,
         maxTuning: 300,
-        screen: undefined,
+        screen: (fg.Game.loadedSaveStations.find(function (e){return e.id == id}) || {}).screen,
         screenCanvas: fg.$new("canvas"),
         screenContext: null,
         foreGround: true,
         frameCount: 6,
         drawScreen: function () {
-            if(!fg.Render.cached[this.type]) this.draw();
-            fg.Render.cached[this.type].getContext('2d').drawImage(fg.System.canvas, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
-            this.screen = fg.System.canvas.toDataURL("image/png");
+            var data;
+            if(!fg.Render.cached[this.type]) {
+                this.draw();
+                if(this.screen) {
+                    var img = fg.$new("img");
+                    img.src = this.screen;
+                    data = img;
+                } else data = fg.System.canvas; 
+            } else data = fg.System.canvas;
+            fg.Render.cached[this.type].getContext('2d').drawImage(data, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
         },
         drawTile: function (c, ctx) {
             this.screenCanvas.width = fg.System.defaultSide;
@@ -1400,12 +1410,14 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         update: function (foreGround) {
             if(foreGround) return;
             this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
-            this.cacheX = this.animationIndex * this.width;
+            var randValue = Math.round(Math.random() * 5);
+            this.cacheX = (!this.interacting ? randValue : (this.animationIndex % 2 == 0 ? randValue : 0)) * this.width;
             fg.Game.saving = false;
             if (!this.interacting) {
                 this.tuning = 0;
+                if(this.screen) this.cacheX = 0;;
             } else {
-                if (!this.screen) this.drawScreen();
+                if (!fg.Render.cached[this.type]) this.drawScreen();
                 if (this.tuning < this.maxTuning) {
                     this.tuning++;
                     if (this.tuning == this.maxTuning) {
@@ -2108,6 +2120,7 @@ fg.Game =
             };
             this.loadedSaveStations = saveState.saveStations;
             localStorage.fallingSaveState = JSON.stringify(saveState);
+            fg.Game.curSaveStation.screen = fg.System.canvas.toDataURL();
         },
         update: function () {
             if ((fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) && !this.saving) this.paused = !this.paused;
