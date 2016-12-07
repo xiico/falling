@@ -200,14 +200,9 @@ fg.Camera = {
 
 fg.protoLevel = {
     name: "",
-    entities: [],
     loaded: false,
     height: 0,
     width: 0,
-    levelSwiches: [],
-    movingPlatforms: [],
-    customProperties: [],
-    marioBuffer: [],
     loadSettings: function () {
         if (window[this.name].levelSwiches)
             this.levelSwiches = window[this.name].levelSwiches;
@@ -734,6 +729,10 @@ fg.Circle = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Secret = function (id, type, x, y, cx, cy, index) {
+    fg.Game.totalSecrets++;
+    if(fg.Game.secrets.find(function(e){return e == id})) 
+        return undefined; 
+    else
     return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.Interactive, {
         animationIndex: 0,
         width: fg.System.defaultSide / 2,
@@ -789,6 +788,7 @@ fg.Secret = function (id, type, x, y, cx, cy, index) {
             this.cacheX = this.animationIndex * this.width;
         },
         interact: function () {
+            if(fg.Game.secrets.find(function(e){return e != this.id})) fg.Game.secrets.push(this.id);
             fg.Game.currentLevel.entities[this.id.split("-")[0]][this.id.split("-")[1]] = null;
          }
     });
@@ -1961,7 +1961,8 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     //powerUps
     actor.glove = false;
     actor.wallJump = false;
-
+    
+    actor.wallSlideSpeed = 0.082;
     actor.wallSliding = false;
     actor.segments = [];
     actor.wait = 0;
@@ -2046,7 +2047,8 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
             if ((fg.Input.actions["left"] || fg.Input.actions["right"]) && this.speedX == 0) {
                 this.wallSliding = true;
                 if (!fg.Input.actions["jump"]) this.canJump = true;
-                this.speedY = 0.082;
+                this.speedY = this.wallSlideSpeed//0.082;
+                this.speedX = fg.Input.actions["right"] ? 0.01 : -0.01;
             }
         }
     };
@@ -2054,7 +2056,12 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Level = function (name) {
-    var level = Object.create(fg.protoLevel);
+    var level = Object.create(fg.protoLevel);    
+    level.levelSwiches = [];
+    level.movingPlatforms = [];
+    level.customProperties = [];
+    level.marioBuffer = [];
+    level.entities = [];
     level.init(name);
     return level;
 }
@@ -2071,12 +2078,14 @@ fg.Game =
         foreGroundEntities: [],
         gravity: 0.012,//0.016,0.012
         actors: [],
+        secrets: [],
         loaded: 0,
         paused: false,
         lastPauseState: undefined,
         started: false,
         saving: false,
         fontAnimation: { fadeIn: false, blinkText: 0 },
+        totalSecrets: 0,
         loadLevel: function (name) {
             this.levels.push(fg.Level(name));
             return this.levels[this.levels.length - 1];
@@ -2157,11 +2166,13 @@ fg.Game =
                 fg.Game.actors[0].velocity = saveState.powerUps.velocity;
 
                 this.loadedSaveStations = saveState.saveStations;
+                this.secrets = saveState.secrets ? saveState.secrets : [];
             }
         },
         saveState: function () {
             var curSaveState = localStorage.fallingSaveState ? JSON.parse(localStorage.fallingSaveState) : null;
             var saveStations = curSaveState && curSaveState.saveStations ? curSaveState.saveStations : [];
+            var secrets = this.secrets ? this.secrets : [];
 
             var saveStation = saveStations.find(function (e) { return e.id == fg.Game.curSaveStation.id }); 
             fg.Game.curSaveStation.drawScreen();
@@ -2179,7 +2190,8 @@ fg.Game =
                     superJump: fg.Game.actors[0].superJump,
                     velocity: fg.Game.actors[0].velocity
                 },
-                saveStations: saveStations
+                saveStations: saveStations,
+                secrets: secrets
             };
             this.loadedSaveStations = saveState.saveStations;
             localStorage.fallingSaveState = JSON.stringify(saveState);
