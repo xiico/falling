@@ -1,15 +1,15 @@
 var perfTest = {tiles:
-"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"+
-"X                      X╝      XX                                X\n"+
-"X   CX4   XXX                  ╚X                       ╔X       X\n"+
-"XCC CXXXXXX       X╗               X╗   X╗1        p    XX       X\n"+
-"XCXXXXXXXXX C    XXX╗1       X     2 ╗  XXX╗1    ╔X╗             X\n"+
-"X           C  XXXXXXX╗2     X        ╗ XXXXX╗1 ╔XXX╗            X\n"+
-"XXX    X4   XXXXXXXXXXXXX╗2        X2 XXXXXXXXXXXXXXX     X  X   X\n"+
-"3XXX    CC        XXXXXXXXXX╗2                                   X\n"+
-" XXXX   CC        XXXXXXXXXXXXXXSXXXXXXXXXXXXXXXXXXXXXSSSSXXXXX  X\n"+
-"      XXCC                                                       X\n"+
-"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"+
+"X                      X╝      XX                                                                                     X\n"+
+"X   CX4   XXX                  ╚X                       ╔X                                                            X\n"+
+"XCC CXXXXXX       X╗               X╗   X╗1        p    XX                                     XXX   X X              X\n"+
+"XCXXXXXXXXX C    XXX╗1       X     2 ╗  XXX╗1    ╔X╗                                           X X        X  X        X\n"+
+"X           C  XXXXXXX╗2     X        ╗ XXXXX╗1 ╔XXX╗                                          XXX   X X              X\n"+
+"XXX    X4   XXXXXXXXXXXXX╗2        X2 XXXXXXXXXXXXXXX     X  X                                    X                   X\n"+
+"3XXX    CC        XXXXXXXXXX╗2                                                                     X      X  X        X\n"+
+" XXXX   CC        XXXXXXXXXXXXXXSXXXXXXXXXXXXXXXXXXXXXSSSSXXXXX                                     X                 X\n"+
+"      XXCC                                                                                           X                X\n"+
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     movingPlatforms: [{ id: "3-51", features: { moving: true }, settings: { movingOnX: true } }],
     levelSwiches: [//{ id: "8-54", features: { moveTarget: true }, settings: { targetId: "6-58", defaulTimer: 120, direction: "U" } },
                    { id: "8-55", features: { moveTarget: true }, settings: { targetId: "6-58", timed: true, defaulTimer: 120, direction: "D" } },

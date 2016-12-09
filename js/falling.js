@@ -210,6 +210,8 @@ fg.protoLevel = {
             this.movingPlatforms = window[this.name].movingPlatforms;
         if (window[this.name].customProperties)
             this.customProperties = window[this.name].customProperties;
+        if (window[this.name].warpDecks)
+            this.warpDecks = window[this.name].warpDecks;
     },
     createEntities: function () {
         var rows = window[this.name].tiles.split('\n');
@@ -242,6 +244,9 @@ fg.protoLevel = {
                 break;
             case TYPE.SWITCH:
                 settings = (this.levelSwiches.find(function (e) { return e.id == entity.id }) || {}).settings;
+                break;
+            case TYPE.WARPDECK:
+                settings = (this.warpDecks.find(function (e) { return e.id == entity.id }) || {}).settings;
                 break;
             default:
                 settings = (this.customProperties.find(function (e) { return e.id == entity.id }) || {}).settings;
@@ -296,6 +301,7 @@ fg.protoLevel = {
     },
     addEntity: function (row, col, i, k, cx, cy, idx) {
         this.entities[i][k] = fg.Entity(i + "-" + k, col, fg.System.defaultSide * k, fg.System.defaultSide * i, 0, 0, 0);
+        if(!this.entities[i][k]) return;
         if (this.entities[i][k].setYs) this.entities[i][k].setYs(null, null);
         if (this.entities[i][k].type == TYPE.MARIO) this.marioBuffer.push(this.entities[i][k]);
     },
@@ -659,6 +665,8 @@ fg.Entity = function (id, type, x, y, cx, cy, index) {
             return fg.Sentry(id, type, x, y, cx, cy, index);
         case TYPE.SECRET:
             return fg.Secret(id, type, x, y, cx, cy, index);
+        case TYPE.WARPDECK:
+            return fg.WarpDeck(id, type, x, y, cx, cy, index);
         default:
             return Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index);
     }
@@ -788,7 +796,8 @@ fg.Secret = function (id, type, x, y, cx, cy, index) {
             this.cacheX = this.animationIndex * this.width;
         },
         interact: function () {
-            if(fg.Game.secrets.find(function(e){return e != this.id})) fg.Game.secrets.push(this.id);
+            var self = this;
+            if(!fg.Game.secrets.find(function(e){return e == self.id})) fg.Game.secrets.push(self.id);
             fg.Game.currentLevel.entities[this.id.split("-")[0]][this.id.split("-")[1]] = null;
          }
     });
@@ -1503,6 +1512,16 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
     });
 }
 
+fg.WarpDeck = function (id, type, x, y, cx, cy, index) {
+    return fg.Game.currentLevel.applySettingsToEntity(
+        Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.Interactive, {
+            collidable: false,
+            interact: function (obj) {
+                fg.Game.warp(obj, { y: this.destinationY, x: this.destinationX });
+            }
+        }))
+}
+
 fg.Sentry = function (id, type, x, y, cx, cy, index) {
     return fg.Game.currentLevel.applySettingsToEntity(
         Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
@@ -1653,7 +1672,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                 if (this.wait == 0) {
                     if (this.active) this.moving = true;
                     if (this.aim < (this.maxAim * 0.8)) {
-                        var segValue = 12;
+                        var segValue = 6;//12;
                         var searchAngle = 360 / segValue;
                         this.curAngle = Math.round(Math.atan2((fg.Game.actors[0].y + (fg.Game.actors[0].height / 2)) - (this.y + (this.height / 2)), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + (this.width / 2))) * 180 / Math.PI) - (searchAngle / 2);
                         this.actorBeams = [];
@@ -1733,7 +1752,7 @@ fg.Sentry = function (id, type, x, y, cx, cy, index) {
                     if (this.wait == 0) this.wait = this.maxWait;
 
                     this.aim = 0;
-                    if (intersect.type == TYPE.ACTOR) fg.Game.actors[0].life = 0;
+                    if (intersect.type == TYPE.ACTOR && !fg.Game.actors[0].disabled) fg.Game.actors[0].life = 0;
 
                     if (intersect.type == TYPE.MARIO) {
                         var objX = parseInt(intersect.id.split("-")[0]);
@@ -2021,11 +2040,11 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
         return false;
     };
     actor.update = function () {
-        if (actor.checkDeath()) return;
+        if (this.checkDeath() || this.disabled) return;
         this.soilFriction = 0.25;
         if (fg.Input.actions["jump"]) {
             if (this.canJump) {
-                this.speedY = -(Math.abs(this.speedY) + this.accelY <= 0.2 ? Math.abs(this.speedY) + this.accelY : 0.2);
+                this.speedY = -(Math.abs(this.speedY) + this.accelY <= (0.0125 * fg.Timer.deltaTime) ? Math.abs(this.speedY) + this.accelY : (0.0125 * fg.Timer.deltaTime));
                 if (this.wallSliding) this.speedX = fg.Input.actions["left"] ? 0.06 : -0.06;
             }
             if (Math.abs(this.speedY) >= 0.2) this.canJump = false;
@@ -2117,6 +2136,23 @@ fg.Game =
                 fg.Input.bindTouch(fg.$("#main"), "esc");
             }
             this.run();
+        },
+        drawMap: function(){
+            var scale = 4;
+            fg.Render.offScreenRender().width = fg.System.searchDepth * scale * 2;
+            fg.Render.offScreenRender().height = Math.round(fg.System.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)) * scale * 2;
+            var ctx = fg.Render.offScreenRender().getContext('2d');
+            
+            for(var i = 0, entity; entity = this.currentEntities[i];i++)
+            {
+                var x = parseInt(entity.id.split('-')[1]) - Math.round(fg.Game.screenOffsetX / fg.System.defaultSide);
+                var y = parseInt(entity.id.split('-')[0]) - Math.round(fg.Game.screenOffsetY / fg.System.defaultSide);
+                if(entity.type == TYPE.WALL || entity.type == TYPE.PLATFORM)
+                    ctx.fillStyle = "black";
+                else
+                    ctx.fillStyle = "red"
+                ctx.fillRect((10 * scale) + (x*scale),(5 * scale) + (y*scale), scale, entity.type == TYPE.PLATFORM ? (scale/2) : scale);
+            }
         },
         run: function () {
             if (fg.Game.currentLevel.loaded) {
@@ -2825,6 +2861,7 @@ fg.Timer = {
     totalTime: 0,
     ticks: 0,
     fps: 0,
+    timeInteval: 16,
     update: function () {
         var d = new Date();
         this.currentTime = d.getTime();
@@ -2847,7 +2884,7 @@ fg.Timer = {
             fg.System.context.fillStyle = "white";
             fg.System.context.fillText(this.fps, 10, 10);
         }
-        this.deltaTime = 16;//Math.floor((Math.max(this.currentTime - this.lastTime, 15) <= 30 ? this.currentTime - this.lastTime : 30) / 2) * 2;//16
+        this.deltaTime = this.timeInteval;//Math.floor((Math.max(this.currentTime - this.lastTime, 15) <= 30 ? this.currentTime - this.lastTime : 30) / 2) * 2;//16
         this.lastTime = this.currentTime;
         this.ticks++;
     }
@@ -2880,5 +2917,6 @@ var TYPE = {
     SUPERJUMP: "j",
     SENTRY: "e",
     ACTOR: "A",
-    SECRET: "i"
+    SECRET: "i",
+    WARPDECK: "w"
 }
