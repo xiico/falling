@@ -168,11 +168,11 @@ fg.Camera = {
     dampRatio: 0.96,
     position: 0,
     init: function () {
-        if(this.following) {
+        if (this.following) {
             fg.Game.screenOffsetX = this.following.x;
             fg.Game.screenOffsetY = this.following.y;
         }
-     },
+    },
     follow: function (obj) {
         this.following = obj;
     },
@@ -301,7 +301,7 @@ fg.protoLevel = {
     },
     addEntity: function (row, col, i, k, cx, cy, idx) {
         this.entities[i][k] = fg.Entity(i + "-" + k, col, fg.System.defaultSide * k, fg.System.defaultSide * i, 0, 0, 0);
-        if(!this.entities[i][k]) return;
+        if (!this.entities[i][k]) return;
         if (this.entities[i][k].setYs) this.entities[i][k].setYs(null, null);
         if (this.entities[i][k].type == TYPE.MARIO) this.marioBuffer.push(this.entities[i][k]);
     },
@@ -399,6 +399,12 @@ fg.protoEntity = {
             if (!foreGround && !this.backGround || foreGround && !this.foreGround || this.vanished) return;
             fg.Render.draw(fg.Render.cached[this.type], this.cacheX, this.cacheY, this.cacheWidth, this.cacheHeight, this.x, this.y);
         }
+        if (fg.Game.showIds) {
+            fg.System.context.font = "7px Arial";
+            fg.System.context.fillStyle = "white";
+            fg.System.context.fillText(this.id.split('-')[0], this.x - fg.Game.screenOffsetX + 7, this.y + 11 - fg.Game.screenOffsetY);
+            fg.System.context.fillText(this.id.split('-')[1], this.x - fg.Game.screenOffsetX + 7, this.y + 18 - fg.Game.screenOffsetY);
+        }
     },
     drawTile: function (c, ctx) {
         c.width = this.width;
@@ -472,7 +478,7 @@ fg.Active =
             }
             if (this.entitiesToResolveX.length > 0) {
                 this.resolveCollisions(this.entitiesToResolveX, this.entitiesToResolveY);
-                if(this.type == TYPE.ACTOR && (Math.abs(this.speedX) >= Math.abs(this.maxSpeedX * 1.5) || Math.abs(this.speedY) > Math.abs(this.maxSpeedY * 1.5 ))) this.life = 0;
+                if (this.type == TYPE.ACTOR && (Math.abs(this.speedX) >= Math.abs(this.maxSpeedX * 1.5) || Math.abs(this.speedY) > Math.abs(this.maxSpeedY * 1.5))) this.life = 0;
             } else {
                 this.addedSpeedX = 0;
                 this.x = this.nextPosition.x;
@@ -738,18 +744,18 @@ fg.Circle = function (id, type, x, y, cx, cy, index) {
 
 fg.Secret = function (id, type, x, y, cx, cy, index) {
     fg.Game.totalSecrets++;
-    if(fg.Game.secrets.find(function(e){return e == id})) 
-        return undefined; 
+    if (fg.Game.secrets.find(function (e) { return e == id }))
+        return undefined;
     else
-    return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.Interactive, {
-        animationIndex: 0,
-        width: fg.System.defaultSide / 2,
-        height: fg.System.defaultSide / 2,
-        x: x + (fg.System.defaultSide / 4),
-        y: y + (fg.System.defaultSide / 2),
-        cacheWidth: fg.System.defaultSide / 2,
-        cacheHeight: fg.System.defaultSide / 2,
-        drawBase: function (ctx, offSetX, colorA, colorB, colorC, colorD) {
+        return Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.Interactive, {
+            animationIndex: 0,
+            width: fg.System.defaultSide / 2,
+            height: fg.System.defaultSide / 2,
+            x: x + (fg.System.defaultSide / 4),
+            y: y + (fg.System.defaultSide / 2),
+            cacheWidth: fg.System.defaultSide / 2,
+            cacheHeight: fg.System.defaultSide / 2,
+            drawBase: function (ctx, offSetX, colorA, colorB, colorC, colorD) {
                 ctx.fillStyle = colorA;
                 ctx.fillRect(offSetX + 4, 9, 4, 2);
                 ctx.fillRect(offSetX + 3, 11, 6, 1);
@@ -762,45 +768,45 @@ fg.Secret = function (id, type, x, y, cx, cy, index) {
                 ctx.fillStyle = colorD;
                 ctx.fillRect(offSetX + 4, 5, 1, 1);
                 ctx.fillRect(offSetX + 4, 8, 1, 1);
-         },
-        drawTile: function (c, ctx) {
-            this.cacheWidth = this.width;
-            this.cacheHeight = this.height;;
-            c.width = this.width * 4;
-            c.height = this.height;      
-            var colorA = 'rgb(52, 36, 24)';
-            var colorB = 'rgb(226,154,00)';
-            var colorC = 'rgb(255,208,21)';
-            var colorD = 'rgb(255,243,188)';
-            for (var i = 0; i < 4; i++) {                
-                var offSetX = (i * (fg.System.defaultSide / 2));
-                this.drawBase(ctx, offSetX, colorA, colorB, colorC, colorD);
-                ctx.fillStyle = colorB;
-                ctx.fillRect(offSetX + 7, 1, 2, 4);
-                ctx.fillRect(offSetX + [9,6,6,6][i], [1,4,1,1][i], [2,1,1,1][i], [1,1,4,4][i]);
-                if(i != 2) ctx.fillRect(offSetX + [10,9,,9][i], [2,1,,1][i], [1,1,,1][i], [1,2,,2][i]);
-                if(i == 0 || i == 3) ctx.fillRect(offSetX + [9,,,5][i], [3,,,1][i], [1,,,1][i], [1,,,3][i]);
-                ctx.fillStyle = colorC;
-                ctx.fillRect(offSetX + [3,3,3,5][i], [1,1,1,4][i], [4,3,3,1][i], [4,4,4,1][i]);
-                ctx.fillRect(offSetX + [1,6,,4][i], [1,1,,1][i], [2,1,,1][i], [1,3,,3][i]);
-                ctx.fillRect(offSetX + [1,2,,2][i], [2,1,,1][i], [1,1,,1][i], [1,2,,2][i]);
-                if(i == 0) ctx.fillRect(offSetX + 2, 3, 1, 1);
-                ctx.fillStyle = colorD;
-                ctx.fillRect(offSetX + (i != 3 ? 4 : 3), 1, 1, 4);
-                if(i == 3 ) ctx.fillRect(offSetX + 4, 4, 1, 1);
+            },
+            drawTile: function (c, ctx) {
+                this.cacheWidth = this.width;
+                this.cacheHeight = this.height;;
+                c.width = this.width * 4;
+                c.height = this.height;
+                var colorA = 'rgb(52, 36, 24)';
+                var colorB = 'rgb(226,154,00)';
+                var colorC = 'rgb(255,208,21)';
+                var colorD = 'rgb(255,243,188)';
+                for (var i = 0; i < 4; i++) {
+                    var offSetX = (i * (fg.System.defaultSide / 2));
+                    this.drawBase(ctx, offSetX, colorA, colorB, colorC, colorD);
+                    ctx.fillStyle = colorB;
+                    ctx.fillRect(offSetX + 7, 1, 2, 4);
+                    ctx.fillRect(offSetX + [9, 6, 6, 6][i], [1, 4, 1, 1][i], [2, 1, 1, 1][i], [1, 1, 4, 4][i]);
+                    if (i != 2) ctx.fillRect(offSetX + [10, 9, , 9][i], [2, 1, , 1][i], [1, 1, , 1][i], [1, 2, , 2][i]);
+                    if (i == 0 || i == 3) ctx.fillRect(offSetX + [9, , , 5][i], [3, , , 1][i], [1, , , 1][i], [1, , , 3][i]);
+                    ctx.fillStyle = colorC;
+                    ctx.fillRect(offSetX + [3, 3, 3, 5][i], [1, 1, 1, 4][i], [4, 3, 3, 1][i], [4, 4, 4, 1][i]);
+                    ctx.fillRect(offSetX + [1, 6, , 4][i], [1, 1, , 1][i], [2, 1, , 1][i], [1, 3, , 3][i]);
+                    ctx.fillRect(offSetX + [1, 2, , 2][i], [2, 1, , 1][i], [1, 1, , 1][i], [1, 2, , 2][i]);
+                    if (i == 0) ctx.fillRect(offSetX + 2, 3, 1, 1);
+                    ctx.fillStyle = colorD;
+                    ctx.fillRect(offSetX + (i != 3 ? 4 : 3), 1, 1, 4);
+                    if (i == 3) ctx.fillRect(offSetX + 4, 4, 1, 1);
+                }
+                return c;
+            },
+            update: function () {
+                if (fg.Timer.ticks % 10 == 0) this.animationIndex = this.animationIndex + 1 < 4 ? this.animationIndex + 1 : 0;
+                this.cacheX = this.animationIndex * this.width;
+            },
+            interact: function () {
+                var self = this;
+                if (!fg.Game.secrets.find(function (e) { return e == self.id })) fg.Game.secrets.push(self.id);
+                fg.Game.currentLevel.entities[this.id.split("-")[0]][this.id.split("-")[1]] = null;
             }
-            return c;
-        },
-        update: function(){
-            if(fg.Timer.ticks % 10 == 0) this.animationIndex = this.animationIndex + 1 < 4 ? this.animationIndex + 1 : 0;
-            this.cacheX = this.animationIndex * this.width;
-        },
-        interact: function () {
-            var self = this;
-            if(!fg.Game.secrets.find(function(e){return e == self.id})) fg.Game.secrets.push(self.id);
-            fg.Game.currentLevel.entities[this.id.split("-")[0]][this.id.split("-")[1]] = null;
-         }
-    });
+        });
 }
 
 fg.Platform = {
@@ -992,7 +998,7 @@ fg.Switch = {
     },
     update: function (foreGround) {
         if (this.target === undefined) this.init();
-        if(foreGround) return;
+        if (foreGround) return;
         if (this.interacting) {
             if (this.interactor.x >= this.x && this.interactor.x + this.interactor.width <= this.x + this.width) {
                 if (this.canChangeState) {
@@ -1346,7 +1352,7 @@ fg.MovingPlatform = {
         this.movingOnX = true;
         this.x += this.movingSpeed * fg.Timer.deltaTime;
         if ((this.movingSpeed < 0 && this.x <= this.nextPosition.x) || (this.movingSpeed > 0 && this.x >= this.nextPosition.x)) {
-            if(this.syncX && this.movingSpeed > 0) {
+            if (this.syncX && this.movingSpeed > 0) {
                 //var synched = fg.Game.currentLevel.entities[this.syncX.split('-')[0]][this.syncX.split('-')[1]];
                 //synched.x = this.x + this.width + (this.segments.length * fg.System.defaultSide);
                 //synched.hovering = 0;
@@ -1426,20 +1432,20 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
         animationIndex: 0,
         tuning: 0,
         maxTuning: 300,
-        screen: (fg.Game.loadedSaveStations.find(function (e){return e.id == id}) || {}).screen,
+        screen: (fg.Game.loadedSaveStations.find(function (e) { return e.id == id }) || {}).screen,
         screenCanvas: fg.$new("canvas"),
         screenContext: null,
         foreGround: true,
         frameCount: 6,
         drawScreen: function () {
             var data;
-            if(!fg.Render.cached[this.type]) {
+            if (!fg.Render.cached[this.type]) {
                 this.draw();
-                if(this.screen) {
+                if (this.screen) {
                     var img = fg.$new("img");
                     img.src = this.screen;
                     data = img;
-                } else data = fg.System.canvas; 
+                } else data = fg.System.canvas;
             } else data = fg.System.canvas;
             fg.Render.cached[this.type].getContext('2d').drawImage(data, 2, 2, fg.System.canvas.width / 16, fg.System.canvas.height / 16);
         },
@@ -1480,14 +1486,14 @@ fg.Save = function (id, type, x, y, cx, cy, index) {
             return c;
         },
         update: function (foreGround) {
-            if(foreGround) return;
+            if (foreGround) return;
             this.animationIndex = this.animationIndex + 1 < 6 ? this.animationIndex + 1 : 0;
             var randValue = Math.round(Math.random() * 5);
             this.cacheX = (!this.interacting ? randValue : (this.animationIndex % 2 == 0 ? randValue : 0)) * this.width;
             fg.Game.saving = false;
             if (!this.interacting) {
                 this.tuning = 0;
-                if(this.screen) this.cacheX = 0;;
+                if (this.screen) this.cacheX = 0;;
             } else {
                 if (!fg.Render.cached[this.type]) this.drawScreen();
                 if (this.tuning < this.maxTuning) {
@@ -1522,343 +1528,352 @@ fg.WarpDeck = function (id, type, x, y, cx, cy, index) {
         }))
 }
 
+fg.ProtoSentry = {
+    attached: false,
+    moving: true,
+    rotation: 0,
+    speedX: 0,
+    speedY: 0,
+    vectorList: [],
+    width: fg.System.defaultSide / 2,
+    height: fg.System.defaultSide / 2,
+    cacheWidth: fg.System.defaultSide / 2,
+    cacheHeight: fg.System.defaultSide / 2,
+    searchDepth: 1,
+    wait: 0,
+    aim: 0,
+    active: true,
+    curAngle: 0,
+    castAngle: 0,
+    maxAim: 120,
+    maxWait: 120,
+    currentEntities: [],
+    laserPoint: { x: 0, y: 0 },
+    actorBeams: [],
+    stationary: false,
+    segValue: 16,//12,6;
+    drawTile: function (c, ctx) {
+        c.width = this.width;
+        c.height = this.height;
+        ctx.fillStyle = "#54A6BF";
+        ctx.arc(this.width / 2, this.height / 2, this.height / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "#407B95";
+        ctx.stroke();
+        return c;
+    },
+    setVectors: function (entity) {
+        var vectors = [];
+        vectors[vectors.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
+        vectors[vectors.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+        vectors[vectors.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
+        vectors[vectors.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
+        entity.vectors = vectors;
+    },
+    getEntitiesVectors: function (entities) {
+        this.vectorList = [];
+        for (var i = 0, entity; entity = entities[i]; i++) {
+            if (entity.id == this.id) continue;
+            if (!entity.vectors) this.setVectors(entity);
+            for (var k = 0; k < entity.vectors.length; k++)
+                this.vectorList.push(entity.vectors[k]);
+        }
+    },
+    checkCollisions: function () {
+        var entities = fg.Game.searchArea(this.x + (this.width / 2), this.y + (this.height / 2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)));
+        for (var k = 0; k < 6; k++) {
+            if (k == 0)
+                this.rotation -= 90;
+            else
+                this.rotation += 90;
+            if (this.rotation < 0) this.rotation = 360 + this.rotation;
+            if (this.rotation == 360) this.rotation = 0;
+            this.addSpeed();
+            if (!this.resolveCollision(entities)) if (this.attached) return;
+        }
+    },
+    resolveCollision: function (ents) {
+        for (var i = 0, obj; obj = ents[i]; i++) {
+            if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
+                if (this.speedX != 0) {
+                    if (this.speedX > 0)
+                        this.x = obj.x - this.width;
+                    else
+                        this.x = obj.x + obj.width;
+                } else {
+                    if (this.speedY > 0)
+                        this.y = obj.y - this.height;
+                    else
+                        this.y = obj.y + obj.height;
+                }
+                this.attached = true;
+                return true;
+            }
+        }
+        return false;
+    },
+    addSpeed: function () {
+        this.speedX = 0;
+        this.speedY = 0;
+        var vel = 0.03 * fg.Timer.deltaTime;
+        switch (this.rotation) {
+            case 0:
+                this.speedX = vel;
+                break;
+            case 90:
+                this.speedY = vel;
+                break;
+            case 180:
+                this.speedX = -vel;
+                break;
+            case 270:
+                this.speedY = -vel;
+                break;
+        }
+    },
+    searchArea: function (actor) {
+        this.currentEntities = [];
+        var startCol = Math.floor(Math.min(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
+        var startRow = Math.floor(Math.min(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
+        var endCol = Math.ceil(Math.max(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
+        var endRow = Math.ceil(Math.max(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
+        var startRowIndex = startRow < 0 ? 0 : startRow;
+        var endRowIndex = endRow > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : endRow;
+        var startColIndex = startCol < 0 ? 0 : startCol;
+        var endColIndex = endCol > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : endCol;
+
+        for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
+            for (var k = startColIndex, obj; k <= endColIndex; k++) {
+                var obj = fg.Game.currentLevel.entities[i][k];
+                if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL || obj.vanished) continue;
+                this.currentEntities.push(obj);
+                if (obj.target && obj.target.segments)
+                    for (var index = 0, entity; entity = obj.target.segments[index]; index++)
+                        this.currentEntities.push(entity);
+            }
+        }
+        if (!actor.vanished) this.currentEntities.push(actor);
+    },
+    targetDistance: function () {
+        return Math.sqrt(Math.pow((this.y + (this.height / 2)) - this.laserPoint.y, 2) + Math.pow((this.x + (this.width / 2)) - this.laserPoint.x, 2));
+    },
+    updateVectors: function (actor) {
+        if (actor && !actor.vanished && this.aim < (this.maxAim * 0.8) && this.wait == 0) {
+            this.laserPoint.x = (actor.x + (actor.width / 2));
+            this.laserPoint.y = (actor.y + (actor.height / 2));
+        }
+        if (fg.Game.outOfScene(this) && this.targetDistance() > fg.System.canvas.width * 0.9) return;
+        this.searchArea(actor);
+        this.getEntitiesVectors(this.currentEntities);
+    },
+    laserFinalMoments: function () {
+        var count = 0;
+        var targetDistance = this.targetDistance();
+        while (this.castRay(this.shootAngle) && targetDistance < (fg.System.canvas.width)) {
+            this.laserPoint.x = this.laserPoint.x + Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+            this.laserPoint.y = this.laserPoint.y + Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+            this.updateVectors(fg.Game.actors[0]);
+            count++;
+            if (count > 40)
+                return;
+            targetDistance = this.targetDistance();
+        }
+    },
+    search: function () {
+        this.updateVectors(fg.Game.actors[0]);
+        if (this.wait == 0) {
+            if (this.active) this.moving = true;
+            if (this.aim < (this.maxAim * 0.8)) {
+                var searchAngle = 360 / this.segValue;
+                this.curAngle = Math.round(Math.atan2((fg.Game.actors[0].y + (fg.Game.actors[0].height / 2)) - (this.y + (this.height / 2)), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + (this.width / 2))) * 180 / Math.PI) - (searchAngle / 2);
+                this.actorBeams = [];
+                for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {
+                    this.castRay(i % 360);
+                }
+                if (this.actorBeams.length > 0) {
+                    var beam = this.actorBeams[Math.floor(this.actorBeams.length / 2)];
+                    this.aiming(beam.intersect);
+                    this.drawTargetCircle(beam.intersect);
+                    this.moving = false;
+                    this.shootAngle = beam.angle;
+                }
+                if (this.aim > 0) {
+                    var resultAngle = this.shootAngle - (searchAngle / 2);
+                    this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
+                }
+            } else this.laserFinalMoments();
+
+            if (this.moving) this.aim = 0;
+        } else {
+            this.castRay(this.shootAngle);
+            this.wait--;
+        }
+    },
+    castRay: function (angle) {
+        var endCastX = Math.cos(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
+        var endCastY = Math.sin(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
+        var ray = {
+            a: { x: this.x + (this.width / 2), y: this.y + (this.height / 2) },
+            b: { x: this.x + endCastX, y: this.y + endCastY }
+        };
+        //debug
+        //this.drawLaser(ray.b);
+
+        // Find CLOSEST intersection
+        var closestIntersect = null;
+        for (var i = 0; i < this.vectorList.length; i++) {
+            var intersect = this.getIntersection(ray, this.vectorList[i]);
+            if (!intersect) continue;
+            if (!closestIntersect || intersect.param < closestIntersect.param) {
+                closestIntersect = intersect;
+            }
+        }
+        var intersect = closestIntersect;
+
+        if (!intersect) return true;
+
+        if (fg.Game.debug) this.drawLaser(intersect);
+
+        if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) && this.targetDistance() < fg.System.canvas.width * 0.9) {
+            if (this.aim < (this.maxAim * 0.8) && this.wait == 0)
+                this.actorBeams.push({ angle: angle, intersect: intersect }); //Beams that actually touch the actor
+            else {
+                this.aiming(intersect);
+                this.drawTargetCircle(intersect);
+                this.moving = false;
+                this.shootAngle = angle;
+                return false;
+            }
+        }
+
+        return true;
+    },
+    aiming: function (intersect) {
+        var ctx = fg.System.context;
+        if (this.aim <= (this.maxAim * 0.8))
+            ctx.lineWidth = 1;
+        else
+            ctx.lineWidth = 2;
+
+        if ((this.maxAim == this.aim || this.wait > 60)) {
+            // Draw red laser
+            this.drawLaser(intersect);
+
+            if (this.wait == 0) this.wait = this.maxWait;
+
+            this.aim = 0;
+            if (intersect.type == TYPE.ACTOR && !fg.Game.actors[0].disabled) fg.Game.actors[0].life = 0;
+
+            if (intersect.type == TYPE.MARIO) {
+                var objX = parseInt(intersect.id.split("-")[0]);
+                var objY = parseInt(intersect.id.split("-")[1]);
+                if (this.wait <= 61) {
+                    fg.Game.currentLevel.entities[objX][objY].vanished = 20000;
+                    this.vanish(intersect);
+                    if (fg.Game.currentLevel.entities[objX][objY].ID == "17-86")
+                        camera.fixed = false;
+                }
+            }
+        }
+    },
+    drawTargetCircle: function (intersect) {
+        var ctx = fg.System.context;
+        ctx.strokeStyle = "#dd3838";
+        ctx.beginPath();
+        ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, 1, 0, 2 * Math.PI, false);
+        ctx.stroke();
+        if (this.maxAim != this.aim && this.wait == 0) {
+            ctx.beginPath();
+            ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, this.maxAim - this.aim, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            this.aim++;
+        }
+    },
+    drawLaser: function (intersect) {
+        var ctx = fg.System.context;
+        // Draw red laser
+        ctx.save();
+        ctx.strokeStyle = "#dd3838";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.x - fg.Game.screenOffsetX + (this.width / 2), this.y - fg.Game.screenOffsetY + (this.height / 2));
+        ctx.lineTo(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY);
+        ctx.stroke();
+        ctx.restore();
+    },
+    vanish: function (intersect) {
+        var entities = fg.Game.currentLevel.entities;
+        var tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
+        var tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
+
+        var objX = parseInt(tempX);
+        var objY = parseInt(tempY);
+
+        if (entities[objX - 1][objY + 0] && entities[objX - 1][objY + 0].type == TYPE.MARIO) entities[objX - 1][objY + 0].tileSet = "";
+        if (entities[objX - 1][objY + 1] && entities[objX - 1][objY + 1].type == TYPE.MARIO) entities[objX - 1][objY + 1].tileSet = "";
+        if (entities[objX - 0][objY + 1] && entities[objX - 0][objY + 1].type == TYPE.MARIO) entities[objX - 0][objY + 1].tileSet = "";
+        if (entities[objX + 1][objY + 1] && entities[objX + 1][objY + 1].type == TYPE.MARIO) entities[objX + 1][objY + 1].tileSet = "";
+        if (entities[objX + 1][objY + 0] && entities[objX + 1][objY + 0].type == TYPE.MARIO) entities[objX + 1][objY + 0].tileSet = "";
+        if (entities[objX + 1][objY - 1] && entities[objX + 1][objY - 1].type == TYPE.MARIO) entities[objX + 1][objY - 1].tileSet = "";
+        if (entities[objX - 0][objY - 1] && entities[objX - 0][objY - 1].type == TYPE.MARIO) entities[objX - 0][objY - 1].tileSet = "";
+        if (entities[objX - 1][objY - 1] && entities[objX - 1][objY - 1].type == TYPE.MARIO) entities[objX - 1][objY - 1].tileSet = "";
+    },
+    getIntersection: function getIntersection(ray, vector) {
+        var r_px = ray.a.x;
+        var r_py = ray.a.y;
+        var r_dx = ray.b.x - ray.a.x;
+        var r_dy = ray.b.y - ray.a.y;
+
+        var s_px = vector.a.x;
+        var s_py = vector.a.y;
+        var s_dx = vector.b.x - vector.a.x;
+        var s_dy = vector.b.y - vector.a.y;
+
+        // Are they parallel? If so, no intersect
+        //if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;
+        if (r_dy == s_dy || r_dx == s_dx) return null;
+
+        // SOLVE FOR T1 & T2
+        var T2 = (r_dx * (s_py - r_py) + r_dy * (r_px - s_px)) / (s_dx * r_dy - s_dy * r_dx);
+        var T1 = (s_px + s_dx * T2 - r_px) / r_dx;
+
+        if (isNaN(T1)) T1 = (s_py + s_dy * T2 - r_py) / r_dy;
+
+        // Must be within parametic whatevers for RAY/SEGMENT
+        if (T1 < 0) return null;
+        if (T2 < 0 || T2 > 1) return null;
+
+        // Return the POINT OF INTERSECTION
+        return {
+            x: r_px + r_dx * T1,
+            y: r_py + r_dy * T1,
+            param: T1,
+            type: vector.type,
+            id: vector.id
+        };
+    },
+    update: function () {
+        if (this.moving && !this.stationary) {
+            this.checkCollisions();
+            switch (this.rotation) {
+                case 0:
+                case 180:
+                    this.x += this.speedX
+                    break;
+                case 90:
+                case 270:
+                    this.y += this.speedY;
+                    break;
+            }
+        }
+        this.search();
+    }
+}
+
 fg.Sentry = function (id, type, x, y, cx, cy, index) {
     return fg.Game.currentLevel.applySettingsToEntity(
-        Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), {
-            attached: false,
-            moving: true,
-            rotation: 0,
-            speedX: 0,
-            speedY: 0,
-            vectorList: [],
-            width: fg.System.defaultSide / 2,
-            height: fg.System.defaultSide / 2,
-            cacheWidth: fg.System.defaultSide / 2,
-            cacheHeight: fg.System.defaultSide / 2,
-            searchDepth: 1,
-            wait: 0,
-            aim: 0,
-            active: true,
-            curAngle: 0,
-            castAngle: 0,
-            maxAim: 120,
-            maxWait: 120,
-            currentEntities: [],
-            laserPoint: { x: 0, y: 0 },
-            actorBeams: [],
-            stationary: false,
-            drawTile: function (c, ctx) {
-                c.width = this.width;
-                c.height = this.height;
-                ctx.fillStyle = "#54A6BF";
-                ctx.arc(this.width / 2, this.height / 2, this.height / 2, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.strokeStyle = "#407B95";
-                ctx.stroke();
-                return c;
-            },
-            getVectors: function (entities) {
-                this.vectorList = [];
-                for (var i = 0, entity; entity = entities[i]; i++) {
-                    if (entity.id == this.id) continue;
-                    if (!entity.vectors) {
-                        entity.vectors = [];
-                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-T", a: { x: entity.x, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y } };
-                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-R", a: { x: entity.x + entity.width, y: entity.y }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
-                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-B", a: { x: entity.x, y: entity.y + entity.height }, b: { x: entity.x + entity.width, y: entity.y + entity.height } };
-                        entity.vectors[entity.vectors.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
-                    }
-                    for (var k = 0; k < entity.vectors.length; k++)
-                        this.vectorList.push(entity.vectors[k]);
-                }
-            },
-            checkCollisions: function () {
-                var entities = fg.Game.searchArea(this.x + (this.width / 2), this.y + (this.height / 2), this.searchDepth, Math.round(this.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)));
-                for (var k = 0; k < 6; k++) {
-                    if (k == 0)
-                        this.rotation -= 90;
-                    else
-                        this.rotation += 90;
-                    if (this.rotation < 0) this.rotation = 360 + this.rotation;
-                    if (this.rotation == 360) this.rotation = 0;
-                    this.addSpeed();
-                    if (!this.resolveCollision(entities)) if (this.attached) return;
-                }
-            },
-            resolveCollision: function (ents) {
-                for (var i = 0, obj; obj = ents[i]; i++) {
-                    if (fg.Game.testOverlap({ id: this.id, x: this.x + this.speedX, y: this.y + this.speedY, width: this.width, height: this.height }, obj)) {
-                        if (this.speedX != 0) {
-                            if (this.speedX > 0)
-                                this.x = obj.x - this.width;
-                            else
-                                this.x = obj.x + obj.width;
-                        } else {
-                            if (this.speedY > 0)
-                                this.y = obj.y - this.height;
-                            else
-                                this.y = obj.y + obj.height;
-                        }
-                        this.attached = true;
-                        return true;
-                    }
-                }
-                return false;
-            },
-            addSpeed: function () {
-                this.speedX = 0;
-                this.speedY = 0;
-                var vel = 0.03 * fg.Timer.deltaTime;
-                switch (this.rotation) {
-                    case 0:
-                        this.speedX = vel;
-                        break;
-                    case 90:
-                        this.speedY = vel;
-                        break;
-                    case 180:
-                        this.speedX = -vel;
-                        break;
-                    case 270:
-                        this.speedY = -vel;
-                        break;
-                }
-            },
-            searchArea: function (actor) {
-                this.currentEntities = [];
-                var startCol = Math.floor(Math.min(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
-                var startRow = Math.floor(Math.min(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
-                var endCol = Math.ceil(Math.max(this.laserPoint.x / fg.System.defaultSide, (this.x + (this.width / 2)) / fg.System.defaultSide));
-                var endRow = Math.ceil(Math.max(this.laserPoint.y / fg.System.defaultSide, (this.y + (this.height / 2)) / fg.System.defaultSide));
-                var startRowIndex = startRow < 0 ? 0 : startRow;
-                var endRowIndex = endRow > fg.Game.currentLevel.entities.length ? fg.Game.currentLevel.entities.length : endRow;
-                var startColIndex = startCol < 0 ? 0 : startCol;
-                var endColIndex = endCol > fg.Game.currentLevel.entities[0].length ? fg.Game.currentLevel.entities[0].length : endCol;
-
-                for (var i = (endRowIndex - 1); i >= startRowIndex; i--) {
-                    for (var k = startColIndex, obj; k <= endColIndex; k++) {
-                        var obj = fg.Game.currentLevel.entities[i][k];
-                        if (!obj || obj.type == TYPE.DARKNESS || obj.type == TYPE.TUNNEL || obj.vanished) continue;
-                        this.currentEntities.push(obj);
-                        if (obj.target && obj.target.segments)
-                            for (var index = 0, entity; entity = obj.target.segments[index]; index++)
-                                this.currentEntities.push(entity);
-                    }
-                }
-                if (!actor.vanished) this.currentEntities.push(actor);
-            },
-            updateVectors: function (actor) {
-                if (actor && !actor.vanished && this.aim < (this.maxAim * 0.8) && this.wait == 0) {
-                    this.laserPoint.x = (actor.x + (actor.width / 2));
-                    this.laserPoint.y = (actor.y + (actor.height / 2));
-                }
-                this.searchArea(actor);
-                this.getVectors(this.currentEntities);
-            },
-            laserFinalMoments: function () {
-                var count = 0;
-                var targetDistance = Math.sqrt(Math.pow((this.y + (this.height / 2)) - this.laserPoint.y, 2) + Math.pow((this.x + (this.width / 2)) - this.laserPoint.x, 2));
-                while (this.castRay(this.shootAngle) && targetDistance < (fg.System.canvas.width)) {
-                    this.laserPoint.x = this.laserPoint.x + Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
-                    this.laserPoint.y = this.laserPoint.y + Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
-                    this.updateVectors(fg.Game.actors[0]);
-                    count++;
-                    if (count > 40)
-                        return;
-                }
-            },
-            search: function () {
-                this.updateVectors(fg.Game.actors[0]);
-                if (this.wait == 0) {
-                    if (this.active) this.moving = true;
-                    if (this.aim < (this.maxAim * 0.8)) {
-                        var segValue = 6;//12;
-                        var searchAngle = 360 / segValue;
-                        this.curAngle = Math.round(Math.atan2((fg.Game.actors[0].y + (fg.Game.actors[0].height / 2)) - (this.y + (this.height / 2)), (fg.Game.actors[0].x + fg.Game.actors[0].width / 2) - (this.x + (this.width / 2))) * 180 / Math.PI) - (searchAngle / 2);
-                        this.actorBeams = [];
-                        for (var i = (this.castAngle * searchAngle) + this.curAngle; i < ((this.castAngle * searchAngle) + searchAngle) + this.curAngle; i += (this.aim == 0 ? 2 : 1)) {
-                            this.castRay(i % 360);
-                        }
-                        if (this.actorBeams.length > 0) {
-                            var beam = this.actorBeams[Math.floor(this.actorBeams.length / 2)];
-                            this.aiming(beam.intersect);
-                            this.drawTargetCircle(beam.intersect);
-                            this.moving = false;
-                            this.shootAngle = beam.angle;
-                        }
-                        if (this.aim > 0) {
-                            var resultAngle = this.shootAngle - (searchAngle / 2);
-                            this.curAngle = (resultAngle >= 0 ? resultAngle : 360 + resultAngle);
-                        }
-                    } else this.laserFinalMoments();
-
-                    if (this.moving) this.aim = 0;
-                } else {
-                    this.castRay(this.shootAngle);
-                    this.wait--;
-                }
-            },
-            castRay: function (angle) {
-                var endCastX = Math.cos(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
-                var endCastY = Math.sin(angle * Math.PI / 180) * (fg.System.canvas.width / 4);
-                var ray = {
-                    a: { x: this.x + (this.width / 2), y: this.y + (this.height / 2) },
-                    b: { x: this.x + endCastX, y: this.y + endCastY }
-                };
-                //debug
-                //this.drawLaser(ray.b);
-
-                // Find CLOSEST intersection
-                var closestIntersect = null;
-                for (var i = 0; i < this.vectorList.length; i++) {
-                    var intersect = this.getIntersection(ray, this.vectorList[i]);
-                    if (!intersect) continue;
-                    if (!closestIntersect || intersect.param < closestIntersect.param) {
-                        closestIntersect = intersect;
-                    }
-                }
-                var intersect = closestIntersect;
-
-                if (!intersect) return true;
-
-                //debug
-                //this.drawLaser(intersect);
-
-                if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) && intersect.param <= 3.75) {
-                    if (this.aim < (this.maxAim * 0.8) && this.wait == 0)
-                        this.actorBeams.push({ angle: angle, intersect: intersect });
-                    else {
-                        this.aiming(intersect);
-                        this.drawTargetCircle(intersect);
-                        this.moving = false;
-                        this.shootAngle = angle;
-                        return false;
-                    }
-                }
-
-                return true;
-            },
-            aiming: function (intersect) {
-                var ctx = fg.System.context;
-                if (this.aim <= (this.maxAim * 0.8))
-                    ctx.lineWidth = 1;
-                else
-                    ctx.lineWidth = 2;
-
-                if (this.maxAim == this.aim || this.wait > 60) {
-                    // Draw red laser
-                    this.drawLaser(intersect);
-
-                    if (this.wait == 0) this.wait = this.maxWait;
-
-                    this.aim = 0;
-                    if (intersect.type == TYPE.ACTOR && !fg.Game.actors[0].disabled) fg.Game.actors[0].life = 0;
-
-                    if (intersect.type == TYPE.MARIO) {
-                        var objX = parseInt(intersect.id.split("-")[0]);
-                        var objY = parseInt(intersect.id.split("-")[1]);
-                        if (this.wait <= 61) {
-                            fg.Game.currentLevel.entities[objX][objY].vanished = 20000;
-                            this.vanish(intersect);
-                            if (fg.Game.currentLevel.entities[objX][objY].ID == "17-86")
-                                camera.fixed = false;
-                        }
-                    }
-                }
-            },
-            drawTargetCircle: function (intersect) {
-                var ctx = fg.System.context;
-                ctx.strokeStyle = "#dd3838";
-                ctx.beginPath();
-                ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, 1, 0, 2 * Math.PI, false);
-                ctx.stroke();
-                if (this.maxAim != this.aim && this.wait == 0) {
-                    ctx.beginPath();
-                    ctx.arc(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY, this.maxAim - this.aim, 0, 2 * Math.PI, false);
-                    ctx.stroke();
-                    this.aim++;
-                }
-            },
-            drawLaser: function (intersect) {
-                var ctx = fg.System.context;
-                // Draw red laser
-                ctx.save();
-                ctx.strokeStyle = "#dd3838";
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(this.x - fg.Game.screenOffsetX + (this.width / 2), this.y - fg.Game.screenOffsetY + (this.height / 2));
-                ctx.lineTo(intersect.x - fg.Game.screenOffsetX, intersect.y - fg.Game.screenOffsetY);
-                ctx.stroke();
-                ctx.restore();
-            },
-            vanish: function (intersect) {
-                var entities = fg.Game.currentLevel.entities;
-                var tempX = intersect ? intersect.id.split("-")[0] : this.id.split("-")[0];
-                var tempY = intersect ? intersect.id.split("-")[1] : this.id.split("-")[1];
-
-                var objX = parseInt(tempX);
-                var objY = parseInt(tempY);
-
-                if (entities[objX - 1][objY + 0] && entities[objX - 1][objY + 0].type == TYPE.MARIO) entities[objX - 1][objY + 0].tileSet = "";
-                if (entities[objX - 1][objY + 1] && entities[objX - 1][objY + 1].type == TYPE.MARIO) entities[objX - 1][objY + 1].tileSet = "";
-                if (entities[objX - 0][objY + 1] && entities[objX - 0][objY + 1].type == TYPE.MARIO) entities[objX - 0][objY + 1].tileSet = "";
-                if (entities[objX + 1][objY + 1] && entities[objX + 1][objY + 1].type == TYPE.MARIO) entities[objX + 1][objY + 1].tileSet = "";
-                if (entities[objX + 1][objY + 0] && entities[objX + 1][objY + 0].type == TYPE.MARIO) entities[objX + 1][objY + 0].tileSet = "";
-                if (entities[objX + 1][objY - 1] && entities[objX + 1][objY - 1].type == TYPE.MARIO) entities[objX + 1][objY - 1].tileSet = "";
-                if (entities[objX - 0][objY - 1] && entities[objX - 0][objY - 1].type == TYPE.MARIO) entities[objX - 0][objY - 1].tileSet = "";
-                if (entities[objX - 1][objY - 1] && entities[objX - 1][objY - 1].type == TYPE.MARIO) entities[objX - 1][objY - 1].tileSet = "";
-            },
-            getIntersection: function getIntersection(ray, vector) {
-                var r_px = ray.a.x;
-                var r_py = ray.a.y;
-                var r_dx = ray.b.x - ray.a.x;
-                var r_dy = ray.b.y - ray.a.y;
-
-                var s_px = vector.a.x;
-                var s_py = vector.a.y;
-                var s_dx = vector.b.x - vector.a.x;
-                var s_dy = vector.b.y - vector.a.y;
-
-                // Are they parallel? If so, no intersect
-                /*if (Math.atan2(r_dy, r_dx) == Math.atan2(s_dy, s_dx)) return null;*/
-                if (r_dy == s_dy || r_dx == s_dx) return null;
-
-                // SOLVE FOR T1 & T2
-                var T2 = (r_dx * (s_py - r_py) + r_dy * (r_px - s_px)) / (s_dx * r_dy - s_dy * r_dx);
-                var T1 = (s_px + s_dx * T2 - r_px) / r_dx;
-
-                if (isNaN(T1)) T1 = (s_py + s_dy * T2 - r_py) / r_dy;
-
-                // Must be within parametic whatevers for RAY/SEGMENT
-                if (T1 < 0) return null;
-                if (T2 < 0 || T2 > 1) return null;
-
-                // Return the POINT OF INTERSECTION
-                return {
-                    x: r_px + r_dx * T1,
-                    y: r_py + r_dy * T1,
-                    param: T1,
-                    type: vector.type,
-                    id: vector.id
-                };
-            },
-            update: function () {
-                if (this.moving && !this.stationary) {
-                    this.checkCollisions();
-                    switch (this.rotation) {
-                        case 0:
-                        case 180:
-                            this.x += this.speedX
-                            break;
-                        case 90:
-                        case 270:
-                            this.y += this.speedY;
-                            break;
-                    }
-                }
-                this.search();
-            }
-        }));
+        Object.assign(Object.create(fg.protoEntity).init(id, type, x, y, cx, cy, index), fg.ProtoSentry,
+            { vectorList: [], currentEntities: [], laserPoint: { x: 0, y: 0 }, actorBeams: [] }));
 }
 
 fg.Slope = function (id, type, x, y, cx, cy, index) {
@@ -1980,7 +1995,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
     //powerUps
     actor.glove = false;
     actor.wallJump = false;
-    
+
     actor.wallSlideSpeed = 0.082;
     actor.wallSliding = false;
     actor.segments = [];
@@ -2075,7 +2090,7 @@ fg.Actor = function (id, type, x, y, cx, cy, index) {
 }
 
 fg.Level = function (name) {
-    var level = Object.create(fg.protoLevel);    
+    var level = Object.create(fg.protoLevel);
     level.levelSwiches = [];
     level.movingPlatforms = [];
     level.customProperties = [];
@@ -2089,6 +2104,7 @@ fg.Game =
     {
         levels: [],
         currentLevel: null,
+        showIds: false,
         screenOffsetX: 0,//5818
         screenOffsetY: 0,//818,5200,72
         increaseX: 0,//0.06666=1
@@ -2105,6 +2121,7 @@ fg.Game =
         saving: false,
         fontAnimation: { fadeIn: false, blinkText: 0 },
         totalSecrets: 0,
+        debug: false,
         loadLevel: function (name) {
             this.levels.push(fg.Level(name));
             return this.levels[this.levels.length - 1];
@@ -2137,21 +2154,20 @@ fg.Game =
             }
             this.run();
         },
-        drawMap: function(){
+        drawMap: function () {
             var scale = 4;
             fg.Render.offScreenRender().width = fg.System.searchDepth * scale * 2;
             fg.Render.offScreenRender().height = Math.round(fg.System.searchDepth * (fg.System.canvas.height / fg.System.canvas.width)) * scale * 2;
             var ctx = fg.Render.offScreenRender().getContext('2d');
-            
-            for(var i = 0, entity; entity = this.currentEntities[i];i++)
-            {
+
+            for (var i = 0, entity; entity = this.currentEntities[i]; i++) {
                 var x = parseInt(entity.id.split('-')[1]) - Math.round(fg.Game.screenOffsetX / fg.System.defaultSide);
                 var y = parseInt(entity.id.split('-')[0]) - Math.round(fg.Game.screenOffsetY / fg.System.defaultSide);
-                if(entity.type == TYPE.WALL || entity.type == TYPE.PLATFORM)
+                if (entity.type == TYPE.WALL || entity.type == TYPE.PLATFORM)
                     ctx.fillStyle = "black";
                 else
                     ctx.fillStyle = "red"
-                ctx.fillRect((10 * scale) + (x*scale),(5 * scale) + (y*scale), scale, entity.type == TYPE.PLATFORM ? (scale/2) : scale);
+                ctx.fillRect((10 * scale) + (x * scale), (5 * scale) + (y * scale), scale, entity.type == TYPE.PLATFORM ? (scale / 2) : scale);
             }
         },
         run: function () {
@@ -2164,8 +2180,8 @@ fg.Game =
                     fg.Game.showTitle();
                     fg.Timer.update();
                 } else fg.Game.update();
-            } else fg.Game.drawLoading(10, fg.System.canvas.height - 20, fg.System.canvas.width - 20, 20);            
-            
+            } else fg.Game.drawLoading(10, fg.System.canvas.height - 20, fg.System.canvas.width - 20, 20);
+
             requestAnimationFrame(fg.Game.run);
         },
         clearScreen: function () {
@@ -2184,7 +2200,7 @@ fg.Game =
                 fg.System.context.fillText("Loading...", x, y);
             }
         },
-        loadState: function(){
+        loadState: function () {
             //Load State
             if (localStorage.fallingSaveState != undefined) {
                 var saveState = JSON.parse(localStorage.fallingSaveState);
@@ -2210,11 +2226,11 @@ fg.Game =
             var saveStations = curSaveState && curSaveState.saveStations ? curSaveState.saveStations : [];
             var secrets = this.secrets ? this.secrets : [];
 
-            var saveStation = saveStations.find(function (e) { return e.id == fg.Game.curSaveStation.id }); 
+            var saveStation = saveStations.find(function (e) { return e.id == fg.Game.curSaveStation.id });
             fg.Game.curSaveStation.drawScreen();
-            if (!saveStation) 
+            if (!saveStation)
                 saveStations.push({ id: fg.Game.curSaveStation.id, screen: fg.Game.curSaveStation.screen, date: Date.now() });
-             else
+            else
                 saveStations[saveStations.indexOf(saveStation)] = { id: fg.Game.curSaveStation.id, screen: fg.Game.curSaveStation.screen, date: Date.now() };
 
             var saveState = {
@@ -2237,8 +2253,8 @@ fg.Game =
             if ((fg.Input.actions["esc"] && fg.Input.actions["esc"] != this.lastPauseState) && !this.saving) this.paused = !this.paused;
             this.lastPauseState = fg.Input.actions["esc"];
             if (!this.paused) {
-                this.clearScreen();            
-                if(this.screenShot) this.screenShot = null;
+                this.clearScreen();
+                if (this.screenShot) this.screenShot = null;
                 this.foreGroundEntities = [];
                 this.searchArea(((fg.System.canvas.width / 2) + fg.Game.screenOffsetX),
                     ((fg.System.canvas.height / 2) + fg.Game.screenOffsetY),
@@ -2252,13 +2268,13 @@ fg.Game =
                 }
                 fg.Camera.update();
                 this.saveScreenAnimation = 0;
-            } else {                         
-                if(!this.screenShot) {
+            } else {
+                if (!this.screenShot) {
                     var img = new Image();
                     img.src = fg.System.canvas.toDataURL();
                     this.screenShot = img;
                 }
-                fg.Render.drawImage(this.screenShot,0,0);
+                fg.Render.drawImage(this.screenShot, 0, 0);
                 if (!this.saving) {
                     fg.System.context.fillStyle = "black";
                     this.drawFont("PAUSED", "", (fg.System.canvas.width / 2) - 12, 180);
@@ -2278,13 +2294,15 @@ fg.Game =
                 fg.Camera.fixed = false;
             }
         },
+        outOfScene: function (obj) {
+            return obj.x > fg.Camera.right || obj.x + obj.width < fg.Camera.left || obj.y > fg.Camera.bottom || obj.y + obj.height < fg.Camera.top;
+        },
         updateEntity: function (obj) {
             if (!obj.foreGround || obj.backGround) obj.update();
-            if (obj.x > fg.Camera.right || obj.x + obj.width < fg.Camera.left || obj.y > fg.Camera.bottom || obj.y + obj.height < fg.Camera.top) return;
+            if (fg.Game.outOfScene(obj)) return;
             //fg.Game.visibleEntities.push(obj);
             obj.draw();
-            if (obj.foreGround)
-                fg.Game.foreGroundEntities.push(obj);
+            if (obj.foreGround) fg.Game.foreGroundEntities.push(obj);
         },
         searchArea: function (startX, startY, depthX, depthY, loopCallBack, endLoopCallBack, caller) {
             this.currentEntities = [];
@@ -2403,12 +2421,12 @@ fg.Game =
 
             ctx.stroke();
 
-            this.drawFont("Press space...","",120,180);
+            this.drawFont("Press space...", "", 120, 180);
             /*if (tracks[0].paused) {
                 tracks[0].play();
             }*/
         },
-        drawFont:function(text,color,x,y){
+        drawFont: function (text, color, x, y) {
             if (fg.Game.fontAnimation.fadeIn)
                 fg.Game.fontAnimation.blinkText += 1;
             else
@@ -2458,20 +2476,20 @@ fg.UI = {
     closeAll: false,
     init: function () {
         this.mainForm = Object.assign(Object.create(this.control), this.container, this.form, {
-            id: "mainForm", active: true, animate: true, showBorder:true, visible: true, width: 100, height: 80, controls: [],
+            id: "mainForm", active: true, animate: true, showBorder: true, visible: true, width: 100, height: 80, controls: [],
             x: (fg.System.canvas.width / 2) - (100 / 2),
             y: (fg.System.canvas.height / 2) - (80 / 2)
         });
         var buttonList = Object.assign(Object.create(this.control), this.container, {
-            id: "buttonList", active: true, animate: false, visible: true, width: 100, height: 80, controls: [], x: 0,  y: 0
+            id: "buttonList", active: true, animate: false, visible: true, width: 100, height: 80, controls: [], x: 0, y: 0
         });
         var saveStationList = Object.assign(Object.create(this.control), this.container, this.form, {
-            id: "saveStationList", active: true, animate: true, showBorder:true, visible: false, width: 240, height: 192, controls: [], x: -70,  y: -60
-        });        
+            id: "saveStationList", active: true, animate: true, showBorder: true, visible: false, width: 240, height: 192, controls: [], x: -70, y: -60
+        });
         this.mainForm.addControl(buttonList);
         this.mainForm.addControl(saveStationList);
         saveStationList.addControl(Object.assign(Object.create(this.control), this.container, {
-            id: "ssList", active: true, animate: false, showBorder: true, visible: true, width: 232, height: 64, controls: [], x: 4,  y: 124
+            id: "ssList", active: true, animate: false, showBorder: true, visible: true, width: 232, height: 64, controls: [], x: 4, y: 124
         }));
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
             id: "save", text: "SAVE", highlighted: true, controls: [],
@@ -2480,36 +2498,38 @@ fg.UI = {
                 return true;
             }
         }));
-        buttonList.addControl(Object.assign(Object.create(this.control), this.button, { id: "warp", controls: [], text: "WARP", 
-        click: function(){
-            var saveStationList = fg.UI.mainForm.controls.find(function(e){return e.id == "saveStationList"});        
-            saveStationList.getActiveContainer().controls = [];    
-            for(var i = 0, ctrl; ctrl = fg.Game.loadedSaveStations[i];i++){
-                saveStationList.getActiveContainer().addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, {
-                    id: "ss-"+ctrl.id, text: ctrl.id, highlighted: i == 0, controls: [],
-                    image: ctrl.screen, ctrl: ctrl, width: 40,
-                    click: function () {                        
-                        fg.Game.warp(fg.Game.actors[0], { y: (parseInt(this.ctrl.id.split("-")[0]) - 1), x: parseInt(this.ctrl.id.split("-")[1]) });
-                        fg.UI.closeAll = true;
-                        return true;
-                    }
-                }));
+        buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
+            id: "warp", controls: [], text: "WARP",
+            click: function () {
+                var saveStationList = fg.UI.mainForm.controls.find(function (e) { return e.id == "saveStationList" });
+                saveStationList.getActiveContainer().controls = [];
+                for (var i = 0, ctrl; ctrl = fg.Game.loadedSaveStations[i]; i++) {
+                    saveStationList.getActiveContainer().addControl(Object.assign(Object.create(fg.UI.control), fg.UI.button, {
+                        id: "ss-" + ctrl.id, text: ctrl.id, highlighted: i == 0, controls: [],
+                        image: ctrl.screen, ctrl: ctrl, width: 40,
+                        click: function () {
+                            fg.Game.warp(fg.Game.actors[0], { y: (parseInt(this.ctrl.id.split("-")[0]) - 1), x: parseInt(this.ctrl.id.split("-")[1]) });
+                            fg.UI.closeAll = true;
+                            return true;
+                        }
+                    }));
+                }
+                saveStationList.visible = true;
+                if (fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
+                if (fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
             }
-            saveStationList.visible = true;
-            if(fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
-            if(fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
-        } }));
+        }));
         buttonList.addControl(Object.assign(Object.create(this.control), this.button, {
             id: "delete", text: "DELETE", controls: [], click: function () {
                 if (!fg.UI.mainForm.controls.find(function (e) { return e.id == "confirm" }))
-                    fg.UI.mainForm.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.container, fg.UI.form, fg.UI.confirm,  {
+                    fg.UI.mainForm.addControl(Object.assign(Object.create(fg.UI.control), fg.UI.container, fg.UI.form, fg.UI.confirm, {
                         text: "Confirm deletion? (All your progress will be lost!)",
                         id: "confirm",
                         controls: [],
                         x: (this.parent.realX / 2) - (fg.UI.confirm.width / 2),
                         y: (this.parent.realY / 2) - (fg.UI.confirm.height / 2),
                         click: function (result) {
-                            if(result) {
+                            if (result) {
                                 fg.UI.closeAll = true;
                                 delete localStorage.fallingSaveState;
                             }
@@ -2521,7 +2541,7 @@ fg.UI = {
                 else fg.UI.mainForm.controls.find(function (e) { return e.id == "confirm" }).show();
                 if (fg.Input.actions["jump"]) delete fg.Input.actions["jump"];
                 if (fg.Input.actions["enter"]) delete fg.Input.actions["enter"];
-            } 
+            }
         }));
     },
     mainForm: undefined,
@@ -2554,7 +2574,7 @@ fg.UI = {
         direction: "vertical",
         positionRelative: false,
         draw: function () {
-            if(this.showBorder){
+            if (this.showBorder) {
                 fg.System.context.beginPath();
                 fg.System.context.fillStyle = this.borderColor;
                 fg.System.context.rect(this.realX + this.x, this.realY + this.y, this.width, this.height);
@@ -2565,44 +2585,46 @@ fg.UI = {
         update: function () {
             for (var i = 0, ctrl; ctrl = this.controls[i]; i++) ctrl.update();
         },
-        addControl: function(obj){
+        addControl: function (obj) {
             var _ctrl = fg.UI.control.addControl.call(this, obj)
-            if(this.controls.length == 1) this.setHighlightedControl(obj);            
-            if(this.align == "center"){
+            if (this.controls.length == 1) this.setHighlightedControl(obj);
+            if (this.align == "center") {
                 var totalHeight = 0;
                 var totalWidth = 0;
                 var startX = 0;
-                var startY = 0;     
-                if(this.direction == "vertical") {               
-                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
-                        if(!ctrl.positionRelative) continue;
-                        totalHeight += ctrl.height;}
-                    startY = (this.height - totalHeight) / 2; 
-                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
-                        if(!ctrl.positionRelative) continue;
+                var startY = 0;
+                if (this.direction == "vertical") {
+                    for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
+                        if (!ctrl.positionRelative) continue;
+                        totalHeight += ctrl.height;
+                    }
+                    startY = (this.height - totalHeight) / 2;
+                    for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
+                        if (!ctrl.positionRelative) continue;
                         ctrl.y = (this.height - startY) - totalHeight;
                         totalHeight -= ctrl.height;
-                        ctrl.x = (this.width / 2) - (ctrl.width / 2); 
+                        ctrl.x = (this.width / 2) - (ctrl.width / 2);
                     }
-                } else if(this.direction == "horizontal")  {               
-                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
-                        if(!ctrl.positionRelative) continue;
-                        totalWidth += ctrl.width;}
-                    startX = (this.width - totalWidth) / 2; 
-                    for(var i = 0, ctrl; ctrl = this.controls[i];i++) {
-                        if(!ctrl.positionRelative) continue;
+                } else if (this.direction == "horizontal") {
+                    for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
+                        if (!ctrl.positionRelative) continue;
+                        totalWidth += ctrl.width;
+                    }
+                    startX = (this.width - totalWidth) / 2;
+                    for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
+                        if (!ctrl.positionRelative) continue;
                         ctrl.x = (this.width - startX) - totalWidth;
                         totalWidth -= ctrl.width;
-                        ctrl.y = (this.height / 2) - (ctrl.height / 2); 
+                        ctrl.y = (this.height / 2) - (ctrl.height / 2);
                     }
                 }
-            } else if(this.align == "grid"){
+            } else if (this.align == "grid") {
 
             }
         },
         changeHighlighted: function () {
             for (var i = 0, ctrl; ctrl = this.controls[i]; i++) {
-                if(ctrl.controls.length > 0) {
+                if (ctrl.controls.length > 0) {
                     ctrl.changeHighlighted();
                 }
                 if (!ctrl.highlighted || !this.active) continue;
@@ -2625,17 +2647,17 @@ fg.UI = {
                 break;
             }
         },
-        setHighlightedControl: function(ctrl){
-            if(this.parent) 
+        setHighlightedControl: function (ctrl) {
+            if (this.parent)
                 this.parent.setHighlightedControl(ctrl);
             else
                 this.highlightedControl = ctrl;
         },
-        getActiveContainer: function(){
-            return this.controls.find(function(e){return e.type == "container" && e.active}) || this;
+        getActiveContainer: function () {
+            return this.controls.find(function (e) { return e.type == "container" && e.active }) || this;
         },
-        getHighlightedControl: function(){
-            return this.getActiveContainer().controls.find(function(e){return e.highlighted});
+        getHighlightedControl: function () {
+            return this.getActiveContainer().controls.find(function (e) { return e.highlighted });
         }
     },
     draw: function () {
@@ -2646,10 +2668,10 @@ fg.UI = {
         text: "confirm?",
         width: 180,
         height: 52,
-        direction: "horizontal",         
-        showBorder: true, 
+        direction: "horizontal",
+        showBorder: true,
         draw: function () {
-            if(!this.visible) return;
+            if (!this.visible) return;
             if (this.controls.length == 0) this.addButtons();
             fg.UI.form.draw.call(this);
             fg.System.context.textBaseline = "middle";
@@ -2674,18 +2696,18 @@ fg.UI = {
                 }
             }));
         },
-        show: function(){this.visible = true;}
+        show: function () { this.visible = true; }
     },
     infoBox: {
         image: fg.$new('img'),
         canvas: fg.$new("canvas"),
         screen: undefined,
-        update: function(){
-            if(this.screen){
+        update: function () {
+            if (this.screen) {
                 this.image.src = this.screen;
             }
         },
-        draw: function(){            
+        draw: function () {
             var ctx = this.canvas.getContext('2d');
             ctx.drawImage(this.image, this.realX + this.x + 1, this.realY + this.y + 1, 160, 120);
         }
@@ -2693,10 +2715,10 @@ fg.UI = {
     button: {
         type: "button",
         text: "myButton",
-        draw: function(){
+        draw: function () {
             fg.UI.control.draw.call(this);
-            fg.System.context.textBaseline="middle"; 
-            fg.System.context.textAlign="center"; 
+            fg.System.context.textBaseline = "middle";
+            fg.System.context.textAlign = "center";
             fg.System.context.font = "8px Arial";
             fg.System.context.fillStyle = "white";
             fg.System.context.fillText(this.text, this.realX + this.x + (this.width / 2), this.realY + this.y + (this.height / 2) + 1);
@@ -2709,8 +2731,8 @@ fg.UI = {
         curAnimation: 0,
         maxAnimation: 30,
         fillColor: "black",
-        borderColor: "white",      
-        highlightedColor: "lightGrey",  
+        borderColor: "white",
+        highlightedColor: "lightGrey",
         index: 0,
         selected: false,
         highlighted: false,
@@ -2722,8 +2744,8 @@ fg.UI = {
         height: 12,
         positionRelative: true,
         visible: true,
-        draw: function(){
-            if(!this.visible) return;
+        draw: function () {
+            if (!this.visible) return;
             var startX = this.positionRelative ? this.realX : 0;
             var startY = this.positionRelative ? this.realY : 0;
             fg.System.context.fillStyle = this.highlighted ? this.highlightedColor : this.fillColor;
@@ -2732,29 +2754,29 @@ fg.UI = {
             fg.System.context.fillRect(startX + this.x + 1, startY + this.y + 1, this.width - 2, this.height - 2);
         },
         parent: null,
-        addControl: function(obj) {
+        addControl: function (obj) {
             obj.parent = this;
             obj.realX = this.realX + this.x;
             obj.realY = this.realY + this.y;
             this.controls.push(obj);
             return obj;
         },
-        reset: function(){
+        reset: function () {
             this.curAnimation = 0;
-        }, 
-        click:function(){}
+        },
+        click: function () { }
     },
-    close: function(){
-        var activeForms = this.mainForm.controls.filter(function(e){return e.visible});
-        if(activeForms.length > 1) {
-            if(!fg.UI.closeAll){
+    close: function () {
+        var activeForms = this.mainForm.controls.filter(function (e) { return e.visible });
+        if (activeForms.length > 1) {
+            if (!fg.UI.closeAll) {
                 activeForms[activeForms.length - 1].visible = false;
                 activeForms[activeForms.length - 1].curAnimation = 0;
                 delete fg.Input.actions["esc"];
                 return;
             } else {
-                while (this.mainForm.controls.filter(function(e){return e.visible}).length > 1){
-                    activeForms = this.mainForm.controls.filter(function(e){return e.visible});
+                while (this.mainForm.controls.filter(function (e) { return e.visible }).length > 1) {
+                    activeForms = this.mainForm.controls.filter(function (e) { return e.visible });
                     activeForms[activeForms.length - 1].visible = false;
                     activeForms[activeForms.length - 1].curAnimation = 0;
                 }
@@ -2765,19 +2787,19 @@ fg.UI = {
         this.closeAll = false;
         this.mainForm.reset();
     },
-    activeForm: function(){
-        return this.mainForm.controls.find(function(e){return e.type == "form" && e.visible && e.active}) || this.mainForm;
+    activeForm: function () {
+        return this.mainForm.controls.find(function (e) { return e.type == "form" && e.visible && e.active }) || this.mainForm;
     },
     update: function () {
-        var visibleForms = this.mainForm.controls.filter(function(e){return (e.type == "form" || e.type == "container") && e.visible});
-        for(var i = 0, ctrl; ctrl = visibleForms[i];i++)  ctrl.active = i == visibleForms.length - 1;
+        var visibleForms = this.mainForm.controls.filter(function (e) { return (e.type == "form" || e.type == "container") && e.visible });
+        for (var i = 0, ctrl; ctrl = visibleForms[i]; i++)  ctrl.active = i == visibleForms.length - 1;
         if (fg.Input.actions["esc"]) {
             this.close();
         }
         if (this.mainForm.active) {
             if (fg.Input.actions["right"] || fg.Input.actions["left"]) this.mainForm.changeHighlighted();
             if (fg.Input.actions["enter"] || fg.Input.actions["jump"]) {
-                if((this.activeForm().getHighlightedControl() || {click:function(){}}).click()) this.close();
+                if ((this.activeForm().getHighlightedControl() || { click: function () { } }).click()) this.close();
             }
         }
     }
@@ -2875,9 +2897,9 @@ fg.Timer = {
             }
 
             fg.System.context.font = "10px Arial";
-            fg.System.context.textAlign="left"; 
-            if(fg.Game.paused) {
-                fg.System.context.textBaseline  = "alphabetic";
+            fg.System.context.textAlign = "left";
+            if (fg.Game.paused) {
+                fg.System.context.textBaseline = "alphabetic";
                 fg.System.context.fillStyle = "black";
                 fg.System.context.fillRect(9, 1, 30, 10);
             }
