@@ -449,6 +449,7 @@ fg.Active =
             this.ignoreFriction = false;
             this.checkCollisions();
             this.cacheX = this.grounded ? 0 : this.width;
+            if(this.x != this.lastPosition.x && Math.abs(this.y - this.lastPosition.y) != fg.Game.gravity * fg.Timer.deltaTime) this.vectors = null;
         },
         getSpeedX: function () {
             return Math.abs(this.speedX) * this.getFriction() > 0.001 ? this.speedX * this.getFriction() : 0;
@@ -1402,6 +1403,7 @@ fg.Grower = {
         if (this.growTimer === undefined) this.init();
         if (this.interacting && this.interactor.x >= this.x && this.interactor.x + this.interactor.width <= this.x + this.width) {
             if (this.growTimer <= 0) {
+                this.vectors = undefined;
                 if (this.y > this.defaultY - ((this.maxGrowth * fg.System.defaultSide) - fg.System.defaultSide))
                     this.y -= (this.growthSpeed * fg.Timer.deltaTime);
                 else
@@ -1414,6 +1416,7 @@ fg.Grower = {
                 this.growTimer = this.defaultGrowTimer
 
             if (this.shrinkTimer <= 0 && this.y != this.defaultY) {
+                this.vectors = undefined;
                 if (this.y < this.defaultY) {
                     this.y += (this.growthSpeed * fg.Timer.deltaTime);
                 } else {
@@ -1570,10 +1573,16 @@ fg.ProtoSentry = {
         vectors[vectors.length] = { type: entity.type, id: entity.id + "-L", a: { x: entity.x, y: entity.y }, b: { x: entity.x, y: entity.y + entity.height } };
         entity.vectors = vectors;
     },
-    getEntitiesVectors: function (entities) {
-        this.vectorList = [];
+    getEntitiesVectors: function (entities) {        
         for (var i = 0, entity; entity = entities[i]; i++) {
             if (entity.id == this.id) continue;
+            if (!entity.vectors) this.setVectors(entity);
+            if (entity.segments) this.getEntitiesVectors(entity.segments);
+            for (var k = 0; k < entity.vectors.length; k++)
+                this.vectorList.push(entity.vectors[k]);
+        }
+        for (var i = 0, entity; entity = fg.Game.foreGroundEntities[i]; i++) {
+            if (entity.id == this.id || entity.type == TYPE.TUNNEL) continue;
             if (!entity.vectors) this.setVectors(entity);
             for (var k = 0; k < entity.vectors.length; k++)
                 this.vectorList.push(entity.vectors[k]);
@@ -1662,16 +1671,17 @@ fg.ProtoSentry = {
             this.laserPoint.x = (actor.x + (actor.width / 2));
             this.laserPoint.y = (actor.y + (actor.height / 2));
         }
-        if (fg.Game.outOfScene(this) && this.targetDistance() > fg.System.canvas.width * 0.9) return;
+        //if (fg.Game.outOfScene(this) && this.targetDistance() > fg.System.canvas.width * 0.9) return;
         this.searchArea(actor);
+        this.vectorList = [];
         this.getEntitiesVectors(this.currentEntities);
     },
     laserFinalMoments: function () {
         var count = 0;
         var targetDistance = this.targetDistance();
         while (this.castRay(this.shootAngle) && targetDistance < (fg.System.canvas.width)) {
-            this.laserPoint.x = this.laserPoint.x + Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
-            this.laserPoint.y = this.laserPoint.y + Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4);
+            this.laserPoint.x = this.laserPoint.x + (Math.cos(this.shootAngle * Math.PI / 180) * (targetDistance + 4));
+            this.laserPoint.y = this.laserPoint.y + (Math.sin(this.shootAngle * Math.PI / 180) * (targetDistance + 4));
             this.updateVectors(fg.Game.actors[0]);
             count++;
             if (count > 40)
@@ -1734,7 +1744,7 @@ fg.ProtoSentry = {
 
         if (fg.Game.debug) this.drawLaser(intersect);
 
-        if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) && this.targetDistance() < fg.System.canvas.width * 0.9) {
+        if ((intersect.type == TYPE.ACTOR || this.aim >= (this.maxAim * 0.8) || this.wait > 0) /*&& this.targetDistance() < fg.System.canvas.width * 0.9*/) {
             if (this.aim < (this.maxAim * 0.8) && this.wait == 0)
                 this.actorBeams.push({ angle: angle, intersect: intersect }); //Beams that actually touch the actor
             else {

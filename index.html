@@ -31,7 +31,7 @@
 
 <body onload="fg.Game.start();">
     <div class="header"></div>
-    <div class="mainContent">
+    <div id="mc" class="mainContent" data-type="content">
         <div class="content">
             <canvas id="main" width="320" height="240" class="mc"></canvas>
             <div class="mobileInput">
@@ -44,7 +44,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div>     
+    <form id="frm1"><input type="submit" /></form>
+    <input type="hidden" id="hdn" value="myHidden" />
     <!--
     <div class="debug" style="display:none;">
         <label for="txtTop" title="Top">Top</label>
