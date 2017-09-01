@@ -280,18 +280,10 @@ fg.protoLevel = {
         this.width = this.entities[0].length * fg.System.defaultSide;
         while (this.marioBuffer.length > 0) {
             this.marioBuffer[this.marioBuffer.length - 1].setSubTiles();
-            if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203" || this.marioBuffer[this.marioBuffer.length - 1].tileSet == "30313233") {
-                if (this.marioBuffer[this.marioBuffer.length - 1].tileSet == "00010203") {
-                    fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = 0;
-                    this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
-                } else {
-                    fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = fg.System.defaultSide * 3;
-                    this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.System.defaultSide * 3;
-                }
-            } else {
-                if (!fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet]) fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = (5 + Object.keys(fg.Render.marioCache).length) * fg.System.defaultSide;
-                this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
-            }
+            if (fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] == null) fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] = Object.keys(fg.Render.marioCache).length * fg.System.defaultSide;
+            //this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet];
+            this.marioBuffer[this.marioBuffer.length - 1].cacheX = fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] % (fg.System.defaultSide * 10);
+            this.marioBuffer[this.marioBuffer.length - 1].cacheY = Math.floor(fg.Render.marioCache[this.marioBuffer[this.marioBuffer.length - 1].tileSet] / (fg.System.defaultSide * 10)) * fg.System.defaultSide;
             this.marioBuffer.pop();
         }
     },
@@ -1084,34 +1076,49 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
             cacheX: 0,//Math.round(Math.random() * 4) * fg.System.defaultSide,//cacheX: fg.System.defaultSide * 0,
             edges: undefined,
             tileSet: "",
-            cachePosition: [{ x: 12, y: 0 }, { x: 12, y: 12 }, { x: 0, y: 12 }, { x: 0, y: 0 }],
+            procedural: true,
+            marioSeed: null,
+            cachePosition: [{ x: (fg.System.defaultSide / 2), y: 0 }, { x: (fg.System.defaultSide / 2), y: (fg.System.defaultSide / 2) }, { x: 0, y: (fg.System.defaultSide / 2) }, { x: 0, y: 0 }],
             drawTile: function (c, ctx) {
-                c.width = this.width * (5 + Object.keys(fg.Render.marioCache).length);
-                c.height = this.height;
-                var colorA = "rgb(201,152,86)";
-                ctx.fillStyle = colorA;
-                ctx.fillRect(0, 0, 72, 24);
-                ctx.fillRect(79, 7, 10, 10);
-                ctx.fillRect(96, 0, 24, 24);
-                //draw speckles
-                this.speckles(ctx);
-                //draw sides tiles
-                this.sides(ctx);
-                //draw inner corners
-                this.innerCorners(ctx);
-                //draw outer corners
-                this.outerCorners(ctx);
-                //mirror sides
-                ctx.save();
-                ctx.translate(c.width - (fg.System.defaultSide * ((5 + Object.keys(fg.Render.marioCache).length) - 6)), 0);
-                ctx.scale(-1, 1);
-                this.sides(ctx);
-                ctx.restore();
 
-                for (var i = 0, key; key = Object.keys(fg.Render.marioCache)[i]; i++) {
-                    //ctx.drawImage(this.renderSubTile(c, key), fg.Render.marioCache[key], 0);
-                    this.renderSubTile(ctx, key);
+                c.width = fg.System.defaultSide * 10;
+                c.height = fg.System.defaultSide * 5;
+                var seedCanvas = fg.$new("canvas");
+                var seedCtx = seedCanvas.getContext('2d');
+                seedCanvas.width = fg.System.defaultSide * 5;
+                seedCanvas.height = fg.System.defaultSide;
+                if (this.procedural) {
+                    var colorA = "rgb(201,152,86)";
+                    seedCtx.fillStyle = colorA;
+                    seedCtx.fillRect(0, 0, 72, 24);
+                    seedCtx.fillRect(79, 7, 10, 10);
+                    seedCtx.fillRect(96, 0, 24, 24);
+                    //draw speckles
+                    this.speckles(seedCtx);
+                    //draw sides tiles
+                    this.sides(seedCtx);
+                    //draw inner corners
+                    this.innerCorners(seedCtx);
+                    //draw outer corners
+                    this.outerCorners(seedCtx);
+                    //mirror sides
+                    seedCtx.save();
+                    seedCtx.translate(seedCanvas.width + fg.System.defaultSide, 0);
+                    seedCtx.scale(-1, 1);
+                    this.sides(seedCtx);
+                    seedCtx.restore();
+                } else {
+
                 }
+                this.marioSeed = new Image();
+                var mario = this;
+                this.marioSeed.onload = function (e) {
+                    //draw background image
+                    for (var i = 0, key; key = Object.keys(fg.Render.marioCache)[i]; i++) {
+                        mario.renderSubTile(ctx, key);
+                    }
+                };
+                this.marioSeed.src = seedCanvas.toDataURL();
 
                 return c;
             },
@@ -1147,31 +1154,25 @@ fg.Mario = function (id, type, x, y, cx, cy, index) {
                 else
                     return "3" + index;
             },
-            setSubTiles: function (setCacheX) {
+            setSubTiles: function (setCacheXY) {
                 this.setEdges();
                 this.tileSet = "";
                 for (var i = 0; i <= 6; i += 2)
                     this.tileSet += this.getSubTiles(this.edges[i], this.edges[i + 1], (this.edges[i + 2] === undefined ? this.edges[0] : this.edges[i + 2]), i / 2);
-                if (setCacheX)
-                    this.cacheX = fg.Render.marioCache[this.tileSet];
+                if (setCacheXY) {
+                    this.cacheX = fg.Render.marioCache[this.tileSet] % (fg.System.defaultSide * 10);
+                    this.cacheY = Math.floor(fg.Render.marioCache[this.tileSet] / (fg.System.defaultSide * 10)) * fg.System.defaultSide;
+                }
             },
             renderSubTile: function (ctx, key) {
-                // fg.Render.offScreenRender().width = fg.System.defaultSide;
-                // for (var i = 0; i <= 6; i += 2) {
-                //     var cacheX = (parseInt(tileSet[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[tileSet[i + 1]].x);
-                //     var cacheY = parseInt(this.cachePosition[tileSet[i + 1]].y);
-                //     var cacheWidth = fg.System.defaultSide / 2;
-                //     var cacheHeight = fg.System.defaultSide / 2;
-                //     fg.Render.drawOffScreen(c, cacheX, cacheY, cacheWidth, cacheHeight, this.cachePosition[i / 2].x, this.cachePosition[i / 2].y);
-                // }
-                // return fg.Render.offScreenRender();
-                var posX = fg.Render.marioCache[key];
+                var posX = fg.Render.marioCache[key] % (fg.System.defaultSide * 10);
+                var posY = Math.floor(fg.Render.marioCache[key] / (fg.System.defaultSide * 10))*fg.System.defaultSide;
                 for (var i = 0; i <= 6; i += 2) {
                     var cacheX = (parseInt(key[i]) * fg.System.defaultSide) + parseInt(this.cachePosition[key[i + 1]].x);
                     var cacheY = parseInt(this.cachePosition[key[i + 1]].y);
                     var cacheWidth = fg.System.defaultSide / 2;
                     var cacheHeight = fg.System.defaultSide / 2;
-                    ctx.drawImage(ctx.canvas, cacheX, cacheY, cacheWidth, cacheHeight, posX + this.cachePosition[i / 2].x, this.cachePosition[i / 2].y, 12, 12);
+                    ctx.drawImage(this.marioSeed, cacheX, cacheY, cacheWidth, cacheHeight, posX + this.cachePosition[i / 2].x, posY + this.cachePosition[i / 2].y, (fg.System.defaultSide / 2), (fg.System.defaultSide / 2));
                 }
             },
             drawColor: function (ctx, t_x, t_y, t_w, t_h, color) {
@@ -2160,7 +2161,7 @@ fg.Game =
                 fg.Input.bindTouch(fg.$("#btnMoveLeft"), "left");
                 fg.Input.bindTouch(fg.$("#btnMoveRight"), "right");
                 fg.Input.bindTouch(fg.$("#btnJump"), "jump");
-                fg.Input.bindTouch(fg.$("#main"), "esc");
+                //fg.Input.bindTouch(fg.$("#main"), "esc");
             }
             this.run();
         },
@@ -2860,6 +2861,28 @@ fg.Input = {
     keyup: function (event) {
         if (fg.Input.bindings[event.keyCode]) {
             delete fg.Input.actions[fg.Input.bindings[event.keyCode]];
+        }
+    },
+    initTouch: function (canvas) {
+        canvas.addEventListener("touchstart", handleStart, false);
+        canvas.addEventListener("touchend", handleEnd, false);
+        canvas.addEventListener("touchcancel", handleCancel, false);
+        canvas.addEventListener("touchmove", handleMove, false);
+        log("initialized.");
+    },
+    handleStart: function (evt) {
+        evt.preventDefault();
+        log("touchstart.");
+        var touches = evt.changedTouches;
+        for (var i = 0; i < touches.length; i++) {
+            log("touchstart:" + i + "...");
+            ongoingTouches.push(copyTouch(touches[i]));
+            var color = colorForTouch(touches[i]);
+            fg.System.context.beginPath();
+            fg.System.context.arc(touches[i].pageX, touches[i].pageY, 4, 0, 2 * Math.PI, false);  // a circle at the start
+            fg.System.context.fillStyle = color;
+            fg.System.context.fill();
+            log("touchstart:" + i + ".");
         }
     },
     initKeyboard: function () {
